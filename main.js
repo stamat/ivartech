@@ -1,0 +1,742 @@
+/**
+ *	@file		IVARTECH JavaScript Library - main class
+ *	@author		Nikola Stamatovic Stamat <stamat@ivartech.com>
+ *	@copyright	IVARTECH http://ivartech.com
+ *	@version	20130313  
+ *	
+ *	@namespace	ivar
+ */
+ 
+ //TODO: Add class inherit and prototype sugar
+
+if (ivar == undefined) var ivar = {};
+if ($i == undefined) var $i = ivar;
+
+ivar.DEBUG = true;
+ivar.LOADED = false;
+ivar._private = {};
+ivar._private.libpath = '';
+ivar._private.imported = {};
+ivar._private.loading = {
+	scripts: {},
+	length: 0
+};
+ivar._private.onReadyFnStack = [];
+ivar._private.libname = 'ivar';
+
+ivar._global = this;
+
+ivar._private.output; //define debug output function, print your output somewhere else...
+
+
+Math.randomArbitrary = function(min, max) {
+  return Math.random() * (max - min) + min;
+};
+
+Math.rand = function(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+
+/*
+	NUMBER prototypes
+*/
+
+Number.prototype.roundFloat = function(decimals) {
+	if(decimals == undefined)
+		decimals = 2;
+	var dec = Math.pow(10, decimals);
+	return Math.round(this*dec)/dec;
+};
+
+/*
+	ARRAY prototypes
+*/
+
+Array.prototype.find = function(value, field) {
+	if(this.length > 0)
+		for(var i = 0; i < this.length; i++) {
+			var elem = this[i];
+			if ((field != undefined) && ((typeof elem == 'object') || (elem.hasOwnProperty('slice') && elem.hasOwnProperty('length'))))
+				elem = this[i][field];
+			if (elem === value)
+				return i;
+		}
+	return -1;
+};
+
+Array.prototype.getLast = function() {
+	if(this.length > 0)
+		return this[this.length-1];
+	else
+		return -1;
+};
+
+Array.prototype.each = function(fn, reversed) {
+	var count = 0;
+	var step = 1;
+	if (reversed) {
+		step = -1;
+		count = this.length - 1;
+	}
+
+	for (var i = 0; i < this.length; i++) {
+		fn(count, this[count]);
+		count = count + step;
+	}
+};
+
+String.prototype.each = Array.prototype.each;
+
+Array.prototype.equal = function(arr) {
+	var self = this;
+	var result = true;
+	if(self === arr)
+		return result;
+	if(self.length != arr.length)
+		result = false;
+	self.each(function(i){
+		if(self[i] != arr[i])
+			result = false;
+	});
+	return result;
+};
+
+Array.prototype.remove = function(id) {
+	return this.splice(id, 1);
+};
+
+Array.prototype.insert = function(id, value) {
+	return this.splice(id, 0, value);
+};
+
+/*
+	STRING prototypes
+*/
+
+if(!String.hasOwnProperty('startsWith'))
+String.prototype.startsWith = function(str, pos) {
+	var prefix = this.substring(pos, str.length);
+	return prefix == str;
+};
+
+if(!String.hasOwnProperty('endsWith'))
+String.prototype.endsWith = function(str, pos) {
+	if(!pos)
+		pos = this.length;
+	var sufix = this.substring(pos - str.length, pos);
+	return sufix == str;
+};
+
+if(!String.hasOwnProperty('trim'))
+String.prototype.trim = function() {
+	return this.replace(/^\s+|\s+$/g,'');
+};
+
+if(!String.hasOwnProperty('trimLeft'))
+String.prototype.trimLeft = function() {
+	return this.replace(/^\s+/,'');
+};
+
+if(!String.hasOwnProperty('trimRight'))
+String.prototype.trimRight = function() {
+	return this.replace(/\s+$/,'');
+};
+
+String.prototype.removePrefix = function(str) {
+	return this.substring(str.length, this.length);
+};
+
+String.prototype.removeSufix = function(str) {
+	return this.substring(0, this.length - str.length);
+};
+
+String.prototype.removeFirst = function() {
+	return this.substring(1, this.length);
+};
+
+String.prototype.removeLast = function() {
+	return this.substring(0, this.length-1);
+};
+
+String.prototype.getFirst = function() {
+	return this.substring(0, 1);
+};
+
+String.prototype.getLast = function() {
+	return this.substring(this.length-1,this.length);
+};
+
+String.prototype.insert = function(what, where) {
+	var left = this.substring(0, where);
+	var right = this.substring(where, this.length);
+	return left+what+right;
+};
+
+String.prototype.swap = function(what, where, withThis) {
+	var whole = this;
+	var str = '';
+	if(withThis != undefined)
+		str = withThis;
+	if(whole.substring(where, what.length + where) == what){
+		var left = whole.substring(0,where);
+		var right = whole.substring(where + what.length, whole.length);
+		whole = left + str + right;
+	}
+	return '' + whole;
+};
+
+String.prototype.hasUpperCase = function() {
+	return this != this.toLowerCase() ? true : false;
+};
+
+String.prototype.hasLowerCase = function() {
+	return this.toUpperCase() != this ? true : false;
+};
+
+ivar._private.findLibPath = function() {
+	var script_elems = document.getElementsByTagName('script');
+		for (var i = 0; i < script_elems.length; i++) {
+			if (script_elems[i].src.endsWith('main.js')) {
+				var href = window.location.href;
+				href = href.substring(0, href.lastIndexOf('/'));
+				var url = script_elems[i].src.removeSufix('main.js');
+				return href.substring(url.length, href.length);
+			}
+		}
+	return '';
+};
+
+ivar._private.onReady = function() {
+	if(!ivar.LOADED) {
+		ivar._private.onReadyFnStack.each(function(i, obj){
+			ivar._private.onReadyFnStack[i]();
+		});
+		ivar.LOADED = true;
+	}
+};
+
+ivar._private.injectScript = function(script_name, uri) {
+	ivar._private.loading.scripts[script_name] = uri;
+	ivar._private.loading.length++;
+	
+	var script_elem = document.createElement('script');
+	script_elem.type = 'text/javascript';
+	script_elem.title = script_name;
+	script_elem.src = uri;
+	script_elem.async = false;
+	script_elem.defer = false;
+	
+	script_elem.onload = function() {
+		ivar._private.loading.length--;
+		delete ivar._private.loading.scripts[script_name];
+		ivar._private.imported[script_name] = uri;
+		ivar.referenceInNamespace(ivar);
+		if(ivar._private.loading.length == 0)
+			ivar._private.onReady();
+	}
+	document.getElementsByTagName('head')[0].appendChild(script_elem);
+};
+
+ivar.isGlobal = function(var_name, root) {
+	if(!ivar.isSet(root))
+		root = ivar._global;
+	return root.hasOwnProperty(var_name); 
+};
+
+ivar.isPrivate = function(var_name) {
+	return var_name.startsWith('_'); 
+};
+
+ivar.isConstant = function(var_name) {
+	return !var_name.hasLowerCase();
+};
+
+ivar.referenceInNamespace = function(object, target) {
+	if(!ivar.isSet(target))
+		target = ivar._global;
+	for(var i in object) {
+		if (!ivar.isGlobal(i, target) && !ivar.isPrivate(i) && !ivar.isConstant(i))
+				ivar._global[i] = ivar[i];
+	}
+}
+
+ivar.require = function(script_name) {
+	var np = script_name.split('.');
+	if (np.getLast() == '*') {
+		np.pop();
+		np.push('_all');
+	}
+		
+	script_name = np.join('.');
+	var uri = ivar._private.libpath + np.join('/')+'.js';
+	if (!ivar._private.loading.scripts.hasOwnProperty(script_name) 
+	 && !ivar._private.imported.hasOwnProperty(script_name)) {
+		ivar._private.injectScript(script_name, uri);
+	}
+};
+
+/**
+ *	Checks if the variable is set or exists
+ *
+ *	@param	{any}	val		Any variable or property
+ *	@return	{boolean}
+ */
+ivar.isSet = function(val) {
+	return (val != undefined) && (val != null);
+};
+
+/**
+ *	Checks if the variable is empty. Array with the length of 0, 
+ *	empty string or empty object.
+ *
+ *	@param	{array|object|string}	obj		Any variable or property
+ *	@return	{boolean}
+ */
+ivar.isEmpty = function(obj) {
+	if (ivar.isSet(obj)) {
+		if (obj.length && obj.length > 0)
+			return false;
+
+		for (var key in obj) {
+			if (hasOwnProperty.call(obj, key))
+				return false;
+		}
+	}
+	return true;
+};
+
+/**
+ *	System out print regular information shortcut. Prints to console or alert
+ *	if console is unavailable.
+ *
+ *	@param	{any}	e		Message in a form of a string or any other object that can be presented in console
+ */
+ivar.print = function(e) {
+	var args = [];
+	args.push('log');
+	for(var i in arguments)
+		args.push(arguments[i]);
+	
+	ivar.systemMessage.apply(null, args);
+};
+
+/**
+ *	System out print warning information shortcut. Prints to console or alert
+ *	if console is unavailable.
+ *
+ *	@param	{any}	e		Message in a form of a string or any other object that can be presented in console
+ */
+ivar.warning = function warning(e) {
+	var args = [];
+	args.push('warn');
+	for(var i in arguments)
+		args.push(arguments[i]);
+	ivar.systemMessage.apply(null, args);
+};
+
+/**
+ *	System out print error information shortcut. Prints to console or alert
+ *	if console is unavailable.
+ *
+ *	@param	{any}	e		Message in a form of a string or any other object that can be presented in console
+ */
+ivar.error = function error(e) {
+	if (!ivar.isSet(arguments[0]) || (arguments[0] == '') || (arguments[0] == ' '))
+		arguments[0] = '[ERROR]: in function "' + ivar.parseFnName(arguments.callee.caller) + '"';
+	var args = [];
+	args.push('error');
+	for(var i in arguments)
+		args.push(arguments[i]);
+	ivar.systemMessage.apply(null, args);
+};
+
+ivar.setDebugOutput = function(fn) {
+	ivar._private.output = fn;
+};
+
+ivar._private.consolePrint = function(obj) {
+	if (obj.msgs.length == 0) {
+		console[obj.type](obj.title);
+	} else {
+		if((obj.type == 'log') || (obj.type == 'warn'))
+			console.groupCollapsed(obj.title);
+		else
+			console.group(obj.title);
+		
+		obj.msgs.each(function(i, elem) {
+			console[obj.type](elem);
+		});
+		
+		console.groupEnd();	
+	}
+};
+
+ivar._private.alertPrint = function(obj) {
+	if (obj.msgs.length == 0) {
+		alert('[' + obj.type + '] ' + obj.title);
+	} else {
+		var resMsg = '';
+		var beginningStr = '-- beginning -- ';
+		var endStr = '-- end -- ';
+		
+		resMsg = '[' + obj.type + '] ' +beginningStr+obj.title+'\n';
+		
+		obj.msgs.each(function(i, elem) {
+			resMsg += elem + '\n';
+		});
+		
+		resMsg = endStr+'\n';
+		alert(resMsg);
+	}
+};
+
+/**
+ *	System out print. Prints to console or alert
+ *	if console is unavailable.
+ *
+ *	@param	{string}	fn		Function name of console object: log, warn, error...
+ *	@param	{any}		msg		Message in a form of a string or any other object that can be presented in console. Or if other arguments are present it is used as a label of set of console outputs
+ *	@param 	{any}		[obj1,[obj2,...]]	
+ */
+ivar.systemMessage = function(fn, msg) {
+	var multi = ivar.isSet(arguments[2]);
+	var consoleExists = ivar.isSet(ivar._global.console) && ivar.isSet(ivar._global.console[fn]);
+	var obj = {
+		type: fn,
+		title: arguments[1],
+		msgs: []
+	};
+
+	if(multi) {
+		for (var i in arguments) {
+			if (i > 1)
+				obj.msgs.push(arguments[i]);
+		}
+	}
+		
+	if(consoleExists && ivar.DEBUG)
+		ivar._private.consolePrint(obj);
+	if(ivar.isSet(ivar._private.output))
+		ivar._private.output(obj);
+	if(!consoleExists && ivar.DEBUG)
+		ivar._private.alertPrint(obj);
+};
+
+ivar.is = function(obj, type) {
+	if (type === 'number')
+		return isNumber(obj);
+	if (whatis(obj) === type)
+		return true;
+	if (type === 'empty')
+		return ivar.isEmpty(obj);
+	if (type === 'set')
+		return ivar.isSet(obj);
+	return false;
+};
+
+ivar.isArray = function(val) {
+	return ivar.is(val, 'array');
+};
+
+ivar.isNumber = function(val) {
+	var type = ivar.whatis(val);
+	return (type === 'int') || (type === 'float') || (type === 'NaN');
+};
+
+ivar.isInt = function(val) {
+	return ivar.is(val, 'int');
+};
+
+ivar.isFloat = function(val) {
+	return ivar.is(val, 'float');
+};
+
+ivar.isString = function(val) {
+	return ivar.is(val,'string');
+};
+
+ivar.isObject = function(val) {
+	return ivar.is(val, 'object');
+};
+
+ivar.isFunction = function(val) {
+	return ivar.is(val, 'function');
+};
+
+ivar.isDate = function(val) {
+	return ivar.is(val,'date');
+};
+
+ivar.isBool = function(val) {
+	return ivar.is(val, 'boolean');
+};
+
+ivar.whatis = function(val) {
+
+	if(val === undefined)
+		return 'undefined';
+	if(val === null)
+		return 'null';
+		
+	var type = typeof val;
+	
+	if(type === 'object') {
+		if(ivar.isSet(val.length) && ivar.isSet(val.push))
+			return 'array';
+		if(ivar.isSet(val.getDate))
+			return 'date';
+		if(ivar.isSet(val.toExponential))
+			type = 'number';
+		if(ivar.isSet(val.substring) && ivar.isSet(val.length))
+			return 'string';
+	}
+	
+	if(type === 'number') {
+		if(!isNaN(val))
+			if(val.toString().indexOf('.') > 0)
+				return 'float';
+			else
+				return 'int';
+		return 'NaN';
+	}
+	
+	return type;
+};
+
+/**
+ *	Parses string value into correct javascript data type
+ *	@copyleft 2011 by Mozilla Developer Network
+ *
+ *	@param 	{string}	sValue
+ *	@return {null|boolean|number|date}
+ */
+ivar.parseText = function(sValue) {
+	var rIsNull = /^\s*$/, rIsBool = /^(?:true|false)$/i;
+	if (rIsNull.test(sValue)) { return null; }
+	if (rIsBool.test(sValue)) { return sValue.toLowerCase() === "true"; }
+	if (isFinite(sValue)) { return parseFloat(sValue); }
+	if (isFinite(Date.parse(sValue))) { return new Date(sValue); }
+	return sValue;
+};
+
+
+/**
+ *	Compares two objects
+ *	
+ *	@todo Should be tested more. Should be recursive for children objects. Two 'for' loops, very slow... Dont know if it can be faster... -.-
+ *
+ *	@param	{object}	obj1	Any object with properties
+ *	@param	{object}	obj2	Any object with properties
+ *	@return	{boolean}			True if equal
+ */
+ivar.equal = function(obj1, obj2) {
+	if (obj1 === obj2)
+		return true;
+	for (var i in obj1) {
+		if (obj1[i] != obj2[i])
+			return false;
+	}
+	for (var i in obj2) {
+		if (obj2[i] != obj1[i])
+			return false;
+	}
+	return true;
+};
+
+/**
+ *	Extends properties of a second object into first, overwriting all of it's properties if 
+ *	they have same properties. Used for loading options.
+ *	
+ *	@param	{object}	extended	First object to be extended
+ *	@param	{object}	extender	Second object extending the first one
+ *	@param	{number[0|1]|boolean}	[clone]		First or the second object
+ *	@return	{object}				Returns cloned object
+ */
+ivar.extend = function(extended, extender, clone, if_not_exists) {
+	if (ivar.isSet(clone))
+		if ((clone <= 0) || !clone)
+			extended = ivar.clone(extended);
+		else if ((clone >= 1) || clone)
+			extender = ivar.clone(extender);
+			
+	for (var i in extender) {
+		if (!(ivar.isSet(extended[i]) && if_not_exists))
+			extended[i] = extender[i];
+	}
+	
+	if (ivar.isSet(clone))
+		if ((clone <= 0) || !clone)
+			return extended;
+		else if ((clone >= 1) || clone)
+			return extender;
+};
+
+ivar.clone = function(obj) {
+	return JSON.parse(JSON.stringify(obj));
+};
+
+/**
+ *	"Short" for loop. Should force me to separate inner loops into functions.
+ *	
+ *	@param	{number}	times	Number of times to spin the function
+ *	@param	{function}	fn		Function to be spun for the given number of times
+ *	@param	{number}	[step=1]	Direction of loop depending on positive or negative value, increases or decreases count by given step
+ */
+ivar.loop = function(times, fn, step) {
+	var count = 0;
+	if (!step)
+		step = 1;
+	else
+		if (step < 0)
+			count = times - 1;
+
+	for (var i = 0; i < times; i++) {
+		fn(count);
+		count = count + step;
+	}
+};
+
+ivar.find = function(obj, val) {
+	for (var i in obj) {
+		if (obj[i] == val)
+			return i;
+	}
+	return null;
+};
+
+ivar.parseFnName = function(func) {
+	if(ivar.isSet(func.name))
+		return func.name;
+	fString = func.toString();
+	before = 'function';
+	after = '(';
+	//TODO: var re = new RegExp('/function\s[a-z]+\s(/', 'gi');
+	fName = fString.substring(fString.indexOf(before) + before.length, fString.indexOf(after));
+	return fName.replace(/^\s+|\s+$/g, '');
+};
+
+ivar.uid = function(saltSize) {
+	if (!isSet(saltSize))
+		saltSize = 100;
+	var i = 97;
+	if (Math.rand(0, 1) == 0)
+		i = 65;
+	var num = Date.now() * saltSize + Math.rand(0, saltSize);
+	return String.fromCharCode(Math.rand(i, i + 25)) + num.toString(16);
+};
+
+ivar.setUniqueObject = function(obj, collection) {
+	if(!ivar.isSet(obj))
+		obj = {};
+	if(!ivar.isSet(collection))
+		collection = ivar._global;
+	var uid = ivar.uid();
+	while(collection[uid])
+		uid = ivar.uid();
+	obj.__uid__ = uid;
+	
+	collection[uid] = obj;
+	return obj;
+};
+
+ivar.mapArray = function(arr, field) {
+	var mapped = [];
+	for(var i = 0; i< arr.length; i++) {
+		var value = arr[i];
+		if(isSet(field))
+			value = arr[i][field]
+		if (isFunction(value))
+			value = ivar.util.parseFnName(value);
+		if (isDate(value))
+			value = value.now();
+		if (isString(value) || isNumber(value))
+			if(isSet(field))
+				mapped[value] = arr[i];
+			else
+				mapped[value] = i;
+	}
+	return mapped;
+};
+
+ivar.sortObjectsBy = function(arr, field, desc, type) {
+	var func;
+	
+	if(arr.length == 0)
+		return [];
+	
+	if(!ivar.isSet(type))
+		type = typeof arr[0][field];
+	
+	if(!ivar.isSet(desc))
+		desc = false;
+	
+	if(ivar.isNumber(type)) {
+		if(!desc) {
+			func = function(a, b) {
+				return a[field]-b[field];
+			};
+		} else {
+			func = function(a, b) {
+				return b[field]-a[field];
+			};
+		}
+	} else if(ivar.isString(type)) {
+		if(!desc) {
+			func = function(a, b) {
+				var fieldA = a[field].toLowerCase();
+				var fieldB = b[field].toLowerCase();
+				if (fieldA < fieldB)
+					return -1; 
+				if (fieldA > fieldB)
+					return 1;
+				return 0;
+			};
+		} else {
+			func = function(a, b) {
+				var fieldA = a[field].toLowerCase();
+				var fieldB = b[field].toLowerCase();
+				if (fieldA < fieldB)
+					return 1; 
+				if (fieldA > fieldB)
+					return -1;
+				return 0;
+			};
+		}
+	} else if(ivar.isDate(type)) {
+		if(!desc) {
+			func = function(a, b) {
+				var fieldA = new Date(a[field]);
+				var fieldB = new Date(b[field]);
+				return fieldA-fieldB;
+			};
+		} else {
+			func = function(a, b) {
+				var fieldA = new Date(a[field]);
+				var fieldB = new Date(b[field]);
+				return fieldB-fieldA;
+			};
+		}
+	}
+	
+	return arr.sort(func);
+};
+
+ivar.namespace = function(str) {
+	var chunks = str.split('.');
+	var current = ivar._global;
+	chunks.each(function(i, elem){
+		if(!current.hasOwnProperty(elem))
+			current[elem] = {};
+		current = current[elem];
+	});
+	return current;
+};
+
+
+ivar.ready = function(fn) {
+	ivar._private.onReadyFnStack.push(fn);
+};
+
+ivar._private.libpath = ivar._private.findLibPath();
+ivar.referenceInNamespace(ivar);
