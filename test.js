@@ -37,14 +37,56 @@ function asd() {
 	b.appendChild(h);
 	
 	function    Lol  () {
-	
+		this.test = '2';
 	}
 	
 	Lol.method(function rofl(){return 'lolzors'});
 	
+	function Rofl() {
+	
+	};
+	
+	function Animal() {
+		this.genitals = true;
+	};
+	
+	Animal.method(function say(){
+		print(this.says);
+	});
+	
+	function Horse() {
+		this.says = 'njiii';
+		this.legs = 4;
+	};
+	
+	Horse.inherit(Animal);
+	
+	function Bird() {
+		this.says = 'ciuciu';
+		this.legs = 2;
+		this.wings = 2;
+	};
+	
+	Bird.inherit(Animal);
+	
+	function Pegasus() {
+		this.explodes = true;
+	};
+	
+	Pegasus.inherit(Bird, Horse);
+	
+	var p = new Pegasus();
+	
+	print(p);
+	p.say();
+	
+	Rofl.inherit(Lol);
+	var a = new Rofl();
+	for(var i in a)
+		print(i);
 	var lol = new Lol();
 	print(lol);
-	print(lol.rofl());
+	//print(lol.rofl());
 	
 	var g = new ivar.data.Graph();
 	g.addNode('a');

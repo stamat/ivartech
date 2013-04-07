@@ -6,8 +6,6 @@
  *	
  *	@namespace	ivar
  */
- 
- //TODO: Add class inherit and prototype sugar
 
 if (ivar == undefined) var ivar = {};
 if ($i == undefined) var $i = ivar;
@@ -117,13 +115,13 @@ Array.prototype.insert = function(id, value) {
 	STRING prototypes
 */
 
-if(!String.prototype.hasOwnProperty('startsWith'))
+if (!String.prototype.hasOwnProperty('startsWith'))
 String.prototype.startsWith = function(str, pos) {
 	var prefix = this.substring(pos, str.length);
 	return prefix == str;
 };
 
-if(!String.prototype.hasOwnProperty('endsWith'))
+if (!String.prototype.hasOwnProperty('endsWith'))
 String.prototype.endsWith = function(str, pos) {
 	if(!pos)
 		pos = this.length;
@@ -131,17 +129,17 @@ String.prototype.endsWith = function(str, pos) {
 	return sufix == str;
 };
 
-if(!String.prototype.hasOwnProperty('trim'))
+if (!String.prototype.hasOwnProperty('trim'))
 String.prototype.trim = function() {
 	return this.replace(/^\s+|\s+$/g,'');
 };
 
-if(!String.prototype.hasOwnProperty('trimLeft'))
+if (!String.prototype.hasOwnProperty('trimLeft'))
 String.prototype.trimLeft = function() {
 	return this.replace(/^\s+/,'');
 };
 
-if(!String.prototype.hasOwnProperty('trimRight'))
+if (!String.prototype.hasOwnProperty('trimRight'))
 String.prototype.trimRight = function() {
 	return this.replace(/\s+$/,'');
 };
@@ -197,6 +195,23 @@ Function.prototype.parseName = function() {
 
 Function.prototype.method = function(func) {
 	this.prototype[func.parseName()] = func;
+};
+
+Function.prototype.inherit = function(classes) {
+	var _classes = [];
+	for (var i in arguments) {
+		_classes.push(arguments[i]);
+		var inst = arguments[i];
+		if(typeof inst == 'function')
+			inst = new inst();
+		
+		for (var j in inst)
+			this.prototype[j] = inst[j];
+	}
+	
+	if(_classes.length == 1)
+		_classes = _classes[0];
+	this.prototype['__super__'] = _classes;
 };
 
 ivar._private.findLibPath = function() {
