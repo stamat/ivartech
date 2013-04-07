@@ -65,11 +65,12 @@ Array.prototype.find = function(value, field) {
 	return -1;
 };
 
+Array.prototype.getFirst = function() {
+	return this[0];
+};
+
 Array.prototype.getLast = function() {
-	if(this.length > 0)
-		return this[this.length-1];
-	else
-		return -1;
+	return this[this.length-1];
 };
 
 Array.prototype.each = function(fn, reversed) {
@@ -88,24 +89,26 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
+//TODO: test == ===
 Array.prototype.equal = function(arr) {
 	var self = this;
-	var result = true;
 	if(self === arr)
-		return result;
+		return true;
 	if(self.length != arr.length)
-		result = false;
+		return false;
 	self.each(function(i){
 		if(self[i] != arr[i])
-			result = false;
+			return false;
 	});
-	return result;
+	return true;
 };
 
+//TODO: remove segment of an array
 Array.prototype.remove = function(id) {
 	return this.splice(id, 1);
 };
 
+//TODO: insert array into array
 Array.prototype.insert = function(id, value) {
 	return this.splice(id, 0, value);
 };
@@ -114,13 +117,13 @@ Array.prototype.insert = function(id, value) {
 	STRING prototypes
 */
 
-if(!String.hasOwnProperty('startsWith'))
+if(!String.prototype.hasOwnProperty('startsWith'))
 String.prototype.startsWith = function(str, pos) {
 	var prefix = this.substring(pos, str.length);
 	return prefix == str;
 };
 
-if(!String.hasOwnProperty('endsWith'))
+if(!String.prototype.hasOwnProperty('endsWith'))
 String.prototype.endsWith = function(str, pos) {
 	if(!pos)
 		pos = this.length;
@@ -128,17 +131,17 @@ String.prototype.endsWith = function(str, pos) {
 	return sufix == str;
 };
 
-if(!String.hasOwnProperty('trim'))
+if(!String.prototype.hasOwnProperty('trim'))
 String.prototype.trim = function() {
 	return this.replace(/^\s+|\s+$/g,'');
 };
 
-if(!String.hasOwnProperty('trimLeft'))
+if(!String.prototype.hasOwnProperty('trimLeft'))
 String.prototype.trimLeft = function() {
 	return this.replace(/^\s+/,'');
 };
 
-if(!String.hasOwnProperty('trimRight'))
+if(!String.prototype.hasOwnProperty('trimRight'))
 String.prototype.trimRight = function() {
 	return this.replace(/\s+$/,'');
 };
@@ -159,31 +162,25 @@ String.prototype.removeLast = function() {
 	return this.substring(0, this.length-1);
 };
 
-String.prototype.getFirst = function() {
-	return this.substring(0, 1);
-};
+String.prototype.getFirst = Array.prototype.getFirst;
 
-String.prototype.getLast = function() {
-	return this.substring(this.length-1,this.length);
-};
+String.prototype.getLast = Array.prototype.getLast;
 
 String.prototype.insert = function(what, where) {
-	var left = this.substring(0, where);
-	var right = this.substring(where, this.length);
-	return left+what+right;
+	if (typeof where == 'string')
+		where = this.indexOf(where);
+	var res = [];
+	res.push(this.substring(0, where));
+	res.push(what);
+	res.push(this.substring(where, this.length));
+	return res.join('');
 };
 
-String.prototype.swap = function(what, where, withThis) {
-	var whole = this;
-	var str = '';
-	if(withThis != undefined)
-		str = withThis;
-	if(whole.substring(where, what.length + where) == what){
-		var left = whole.substring(0,where);
-		var right = whole.substring(where + what.length, whole.length);
-		whole = left + str + right;
-	}
-	return '' + whole;
+String.prototype.swap = function(what, with_this, only_first) {
+	if (only_first)
+		return this.replace(what, with_this);
+	var re = new RegExp(what+'+','g');
+	return this.replace(re, with_this);
 };
 
 String.prototype.hasUpperCase = function() {
@@ -192,6 +189,14 @@ String.prototype.hasUpperCase = function() {
 
 String.prototype.hasLowerCase = function() {
 	return this.toUpperCase() != this ? true : false;
+};
+
+Function.prototype.parseName = function() {
+	return /function\s+([a-zA-Z0-9_\$]+?)\s*\(/g.exec(this.toString())[1];
+};
+
+Function.prototype.method = function(func) {
+	this.prototype[func.parseName()] = func;
 };
 
 ivar._private.findLibPath = function() {
@@ -257,7 +262,7 @@ ivar.referenceInNamespace = function(object, target) {
 		target = ivar._global;
 	for(var i in object) {
 		if (!ivar.isGlobal(i, target) && !ivar.isPrivate(i) && !ivar.isConstant(i))
-				ivar._global[i] = ivar[i];
+			ivar._global[i] = ivar[i];
 	}
 }
 
@@ -343,7 +348,7 @@ ivar.warning = function warning(e) {
  */
 ivar.error = function error(e) {
 	if (!ivar.isSet(arguments[0]) || (arguments[0] == '') || (arguments[0] == ' '))
-		arguments[0] = '[ERROR]: in function "' + ivar.parseFnName(arguments.callee.caller) + '"';
+		arguments[0] = '[ERROR]: in function "' + arguments.callee.caller.parseName() + '"';
 	var args = [];
 	args.push('error');
 	for(var i in arguments)
@@ -382,9 +387,7 @@ ivar._private.alertPrint = function(obj) {
 		
 		resMsg = '[' + obj.type + '] ' +beginningStr+obj.title+'\n';
 		
-		obj.msgs.each(function(i, elem) {
-			resMsg += elem + '\n';
-		});
+		resMsg += obj.msgs.join('\n')+'\n';
 		
 		resMsg = endStr+'\n';
 		alert(resMsg);
@@ -572,6 +575,7 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 			return extender;
 };
 
+//TODO: recursive, for loop descends into feilds
 ivar.clone = function(obj) {
 	return JSON.parse(JSON.stringify(obj));
 };
@@ -605,17 +609,6 @@ ivar.find = function(obj, val) {
 	return null;
 };
 
-ivar.parseFnName = function(func) {
-	if(ivar.isSet(func.name))
-		return func.name;
-	fString = func.toString();
-	before = 'function';
-	after = '(';
-	//TODO: var re = new RegExp('/function\s[a-z]+\s(/', 'gi');
-	fName = fString.substring(fString.indexOf(before) + before.length, fString.indexOf(after));
-	return fName.replace(/^\s+|\s+$/g, '');
-};
-
 ivar.uid = function(saltSize) {
 	if (!isSet(saltSize))
 		saltSize = 100;
@@ -640,6 +633,7 @@ ivar.setUniqueObject = function(obj, collection) {
 	return obj;
 };
 
+//XXX: move to another file
 ivar.mapArray = function(arr, field) {
 	var mapped = [];
 	for(var i = 0; i< arr.length; i++) {
@@ -647,7 +641,7 @@ ivar.mapArray = function(arr, field) {
 		if(isSet(field))
 			value = arr[i][field]
 		if (isFunction(value))
-			value = ivar.util.parseFnName(value);
+			value = value.parseName();
 		if (isDate(value))
 			value = value.now();
 		if (isString(value) || isNumber(value))
@@ -659,6 +653,7 @@ ivar.mapArray = function(arr, field) {
 	return mapped;
 };
 
+//XXX: move to another file
 ivar.sortObjectsBy = function(arr, field, desc, type) {
 	var func;
 	

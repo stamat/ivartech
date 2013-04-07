@@ -17,6 +17,8 @@ function asd() {
 	st.put(test);
 	st.put(test1);
 	st.put(test2);
+	var t = 'Little Nole is cute!';
+	print(t.insert('Lepi and ', 'Nole').swap('is', 'are'));
 	//st.put('omg');
 	//st.put('foo');
 	//st.put('fool');
@@ -34,6 +36,15 @@ function asd() {
 	var b = document.body;
 	b.appendChild(h);
 	
+	function    Lol  () {
+	
+	}
+	
+	Lol.method(function rofl(){return 'lolzors'});
+	
+	var lol = new Lol();
+	print(lol);
+	print(lol.rofl());
 	
 	var g = new ivar.data.Graph();
 	g.addNode('a');
