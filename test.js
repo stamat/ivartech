@@ -2,9 +2,25 @@ require('ivar.html');
 require('ivar.test.*');
 require('ivar.patt.Events');
 require('ivar.data.StringTree');
-require('ivar.data.Graph')
+require('ivar.data.Graph');
+
+function arg() {
+	var a = {'jen': 1, 'dva': 2};
+	ivar.eachArg(arguments, function(i){alert(i)});
+}
+
+
 
 function test() {
+	var a = ['omgzlol','omfg','lol'];
+	var b = ['omgzlol','rofl','zlol', 'yolo'];
+	alert(a.concat(b).join('\n'));
+	ivar.systemMessage('log', 'pa jao', 'jebote', 'lol')
+	try {
+		arg('Lepi and ', 'Nole', 5, ['ads','a']);
+	} catch(e) {
+		alert(e);
+	}
 	ivar.print(a);
 	ivar.print(b);
 }

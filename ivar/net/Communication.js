@@ -154,7 +154,6 @@ ivar.net.Communication.prototype.unregister = function(method_name) {
  *	@return	{boolean}									If sending is successful or not	
  */
 ivar.net.Communication.prototype.send = function(options) {
-
 	var obj = ivar.extend(this.defaults, options, 0);
 	
 	if (!ivar.isSet(obj.url) || !ivar.isSet(obj.request) || !ivar.isSet(obj.request.method)) {
@@ -215,6 +214,7 @@ ivar.net.Communication.prototype.send = function(options) {
 ivar.net.Communication.prototype.receive = function(obj) {
 	var sentObj = this.sent.get(obj.id);
 	var status = ivar.net.httpResponseStatus(obj.status);
+	
 	if (status.type == 2) {
 		if (status.code != 200)
 			ivar.warning(sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
@@ -311,10 +311,16 @@ ivar.net.Communication.prototype.resendAll = function() {
 };
 
 ivar.net.Communication.prototype.execute = function(args) {
-	for(var i in arguments) {
+	var i = 0;
+	while(arguments.hasOwnProperty(i)) {
 		if(this.registered.hasKey(arguments[i]))
 			this.send(this.registered.get(arguments[i]));
+		i++;
 	}
+//	for(var i in arguments) {
+//		if(this.registered.hasKey(arguments[i]))
+//			this.send(this.registered.get(arguments[i]));
+//	}
 };
 
 ivar.net.Communication.prototype.multiple = function(args) {

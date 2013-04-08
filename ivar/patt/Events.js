@@ -29,7 +29,7 @@ ivar.patt.Events = function Events(obj) {
 	this.any;
 	
 	if(ivar.isSet(obj))
-		ivar.util.extend(obj, this);
+		ivar.extend(obj, this);
 };
 
 ivar.patt.Events.prototype.constructor = ivar.patt.Events;

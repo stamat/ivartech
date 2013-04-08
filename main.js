@@ -198,8 +198,9 @@ Function.prototype.method = function(func) {
 };
 
 Function.prototype.inherit = function(classes) {
+	var i = 0;
 	var _classes = [];
-	for (var i in arguments) {
+	while(arguments.hasOwnProperty(i)) {
 		_classes.push(arguments[i]);
 		var inst = arguments[i];
 		if(typeof inst == 'function')
@@ -207,6 +208,7 @@ Function.prototype.inherit = function(classes) {
 		
 		for (var j in inst)
 			this.prototype[j] = inst[j];
+		i++;
 	}
 	
 	if(_classes.length == 1)
@@ -214,16 +216,26 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
+ivar.eachArg = function(args, fn) {
+	var i = 0;
+	while (args.hasOwnProperty(i)) {
+		if(fn != undefined)
+			fn(i, args[i]);
+		i++;
+	}
+	return i-1;
+};
+
 ivar._private.findLibPath = function() {
 	var script_elems = document.getElementsByTagName('script');
-		for (var i = 0; i < script_elems.length; i++) {
-			if (script_elems[i].src.endsWith('main.js')) {
-				var href = window.location.href;
-				href = href.substring(0, href.lastIndexOf('/'));
-				var url = script_elems[i].src.removeSufix('main.js');
-				return href.substring(url.length, href.length);
-			}
+	for (var i = 0; i < script_elems.length; i++) {
+		if (script_elems[i].src.endsWith('main.js')) {
+			var href = window.location.href;
+			href = href.substring(0, href.lastIndexOf('/'));
+			var url = script_elems[i].src.removeSufix('main.js');
+			return url.substring(href.length, url.length).removeFirst();
 		}
+	}
 	return '';
 };
 
@@ -335,8 +347,9 @@ ivar.isEmpty = function(obj) {
 ivar.print = function(e) {
 	var args = [];
 	args.push('log');
-	for(var i in arguments)
-		args.push(arguments[i]);
+	ivar.eachArg(arguments, function(i, elem){
+		args.push(elem);
+	});
 	
 	ivar.systemMessage.apply(null, args);
 };
@@ -350,8 +363,9 @@ ivar.print = function(e) {
 ivar.warning = function warning(e) {
 	var args = [];
 	args.push('warn');
-	for(var i in arguments)
-		args.push(arguments[i]);
+	ivar.eachArg(arguments, function(i, elem){
+		args.push(elem);
+	});
 	ivar.systemMessage.apply(null, args);
 };
 
@@ -366,8 +380,9 @@ ivar.error = function error(e) {
 		arguments[0] = '[ERROR]: in function "' + arguments.callee.caller.parseName() + '"';
 	var args = [];
 	args.push('error');
-	for(var i in arguments)
-		args.push(arguments[i]);
+	ivar.eachArg(arguments, function(i, elem){
+		args.push(elem);
+	});
 	ivar.systemMessage.apply(null, args);
 };
 
@@ -396,16 +411,9 @@ ivar._private.alertPrint = function(obj) {
 	if (obj.msgs.length == 0) {
 		alert('[' + obj.type + '] ' + obj.title);
 	} else {
-		var resMsg = '';
-		var beginningStr = '-- beginning -- ';
-		var endStr = '-- end -- ';
-		
-		resMsg = '[' + obj.type + '] ' +beginningStr+obj.title+'\n';
-		
-		resMsg += obj.msgs.join('\n')+'\n';
-		
-		resMsg = endStr+'\n';
-		alert(resMsg);
+		var resMsg = ['[' + obj.type + '] ' +obj.title, '------'];
+		//resMsg.concat(obj.msgs); doesnt work for some reason
+		alert(resMsg.join('\n')+'\n'+obj.msgs.join('\n'));
 	}
 };
 
@@ -427,10 +435,10 @@ ivar.systemMessage = function(fn, msg) {
 	};
 
 	if(multi) {
-		for (var i in arguments) {
+		ivar.eachArg(arguments, function(i, elem){
 			if (i > 1)
-				obj.msgs.push(arguments[i]);
-		}
+				obj.msgs.push(elem);
+		});
 	}
 		
 	if(consoleExists && ivar.DEBUG)
