@@ -41,7 +41,7 @@ Math.rand = function(min, max) {
 */
 
 Number.prototype.roundFloat = function(decimals) {
-	if(decimals == undefined)
+	if (decimals == undefined)
 		decimals = 2;
 	var dec = Math.pow(10, decimals);
 	return Math.round(this*dec)/dec;
@@ -52,8 +52,8 @@ Number.prototype.roundFloat = function(decimals) {
 */
 
 Array.prototype.find = function(value, field) {
-	if(this.length > 0)
-		for(var i = 0; i < this.length; i++) {
+	if (this.length > 0)
+		for (var i = 0; i < this.length; i++) {
 			var elem = this[i];
 			if ((field != undefined) && ((typeof elem == 'object') || (elem.hasOwnProperty('slice') && elem.hasOwnProperty('length'))))
 				elem = this[i][field];
@@ -95,7 +95,7 @@ Array.prototype.equal = function(arr) {
 	if(self.length != arr.length)
 		return false;
 	self.each(function(i){
-		if(self[i] != arr[i])
+		if (self[i] != arr[i])
 			return false;
 	});
 	return true;
@@ -193,14 +193,14 @@ Function.prototype.parseName = function() {
 	return /function\s+([a-zA-Z0-9_\$]+?)\s*\(/g.exec(this.toString())[1];
 };
 
-Function.prototype.method = function(func) {
+Function.prototype.def = function(func) {
 	this.prototype[func.parseName()] = func;
 };
 
 Function.prototype.inherit = function(classes) {
 	var i = 0;
 	var _classes = [];
-	while(arguments.hasOwnProperty(i)) {
+	while (arguments.hasOwnProperty(i)) {
 		_classes.push(arguments[i]);
 		var inst = arguments[i];
 		if(typeof inst == 'function')
@@ -211,9 +211,30 @@ Function.prototype.inherit = function(classes) {
 		i++;
 	}
 	
-	if(_classes.length == 1)
+	if (_classes.length == 1)
 		_classes = _classes[0];
 	this.prototype['__super__'] = _classes;
+};
+
+ivar.Func = function(parent, functions) {
+	this.parent = parent;
+	this.functions = functions;
+	this.fn = function() {
+		var types = [];
+		var args = [];
+		ivar.eachArg(arguments, function(i, elem) {
+			args.push(elem);
+			types.push(whatis(elem));
+		});
+		if(this.functions.hasOwnProperty(types.join())) {
+			return this.functions[types.join()].apply(parent, args);
+		} else {
+			if(typeof functions == 'function')
+				return this.functions.apply(parent, args);
+			if(this.functions.hasOwnProperty('default'))
+				return this.functions['default'].apply(parent, args);		
+		}
+	};
 };
 
 ivar.eachArg = function(args, fn) {

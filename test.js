@@ -9,18 +9,7 @@ function arg() {
 	ivar.eachArg(arguments, function(i){alert(i)});
 }
 
-
-
 function test() {
-	var a = ['omgzlol','omfg','lol'];
-	var b = ['omgzlol','rofl','zlol', 'yolo'];
-	alert(a.concat(b).join('\n'));
-	ivar.systemMessage('log', 'pa jao', 'jebote', 'lol')
-	try {
-		arg('Lepi and ', 'Nole', 5, ['ads','a']);
-	} catch(e) {
-		alert(e);
-	}
 	ivar.print(a);
 	ivar.print(b);
 }
@@ -33,11 +22,22 @@ function asd() {
 	st.put(test);
 	st.put(test1);
 	st.put(test2);
-	var t = 'Little Nole is cute!';
-	print(t.insert('Lepi and ', 'Nole').swap('is', 'are'));
 	//st.put('omg');
 	//st.put('foo');
 	//st.put('fool');
+	
+	var fn = new Func(null, {
+		'int': function(a) {
+			return a+1;
+		},
+		'string': function(a) {
+			return a+'a';
+		}
+		
+	});
+	
+	print(fn.fn('lol'));
+	
 	var u = setUniqueObject().__uid__;
 	print(u);
 	print(window[u]);
@@ -56,7 +56,7 @@ function asd() {
 		this.test = '2';
 	}
 	
-	Lol.method(function rofl(){return 'lolzors'});
+	Lol.def(function rofl(){return 'lolzors'});
 	
 	function Rofl() {
 	
@@ -66,7 +66,7 @@ function asd() {
 		this.genitals = true;
 	};
 	
-	Animal.method(function say(){
+	Animal.def(function say(){
 		print(this.says);
 	});
 	

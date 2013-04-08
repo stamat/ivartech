@@ -311,30 +311,27 @@ ivar.net.Communication.prototype.resendAll = function() {
 };
 
 ivar.net.Communication.prototype.execute = function(args) {
-	var i = 0;
-	while(arguments.hasOwnProperty(i)) {
-		if(this.registered.hasKey(arguments[i]))
-			this.send(this.registered.get(arguments[i]));
-		i++;
-	}
-//	for(var i in arguments) {
-//		if(this.registered.hasKey(arguments[i]))
-//			this.send(this.registered.get(arguments[i]));
-//	}
+	var self = this;
+	ivar.eachArg(arguments, function(i, elem) {
+		if(self.registered.hasKey(elem))
+			self.send(self.registered.get(elem));
+	});
 };
 
 ivar.net.Communication.prototype.multiple = function(args) {
-	var multiple_request;
-	for(var i in arguments) {
-		if(this.registered.hasKey(arguments[i])) {
+	var multiple_request = null;
+	var self = this;
+	ivar.eachArg(arguments, function(i, elem){
+		if(self.registered.hasKey(elem)) {
 			if(!ivar.isSet(multiple_request)) {
-				multiple_request = ivar.clone(this.registered.get(arguments[i]));
+				multiple_request = ivar.clone(self.registered.get(elem));
 				multiple_request.request = [multiple_request.request];
 			} else {
-				multiple_request.request.push(this.registered.get(arguments[i]).request);
+				multiple_request.request.push(self.registered.get(elem).request);
 			}
 		}
-	}
+	});
+	
 	if(multiple_request.request.length == 1)
 		this.send(args);
 	else if(multiple_request.request.length > 1)

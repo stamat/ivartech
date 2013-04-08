@@ -192,9 +192,11 @@ ivar.patt.Events.prototype.fire = function(event_name) {
 	
 	var arr = this.list[event_name];
 	var args = [];
-	for (var i in arguments) {
-		args.push(arguments[i]);
-	}
+		
+	ivar.eachArg(arguments, function(i, elem) {
+		args.push(elem);
+	});
+
 	if(ivar.isSet(this.any) && ivar.isFunction(this.any))
 		this.any.apply(null, args);
 	args.remove(0);
