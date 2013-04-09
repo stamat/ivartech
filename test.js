@@ -26,17 +26,23 @@ function asd() {
 	//st.put('foo');
 	//st.put('fool');
 	
-	var fn = new Func(null, {
+	var f = fn(null, {
 		'int': function(a) {
 			return a+1;
 		},
 		'string': function(a) {
 			return a+'a';
+		},
+		'int,string': function(a, b) {
+			return a+b;
+		},
+		'default': function(obj) {
+			return obj;
 		}
 		
 	});
 	
-	print(fn.fn('lol'));
+	print(f({a: 1}));
 	
 	var u = setUniqueObject().__uid__;
 	print(u);

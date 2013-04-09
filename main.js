@@ -193,10 +193,13 @@ Function.prototype.parseName = function() {
 	return /function\s+([a-zA-Z0-9_\$]+?)\s*\(/g.exec(this.toString())[1];
 };
 
-Function.prototype.def = function(func) {
-	this.prototype[func.parseName()] = func;
+Function.prototype.method = function(func, func_name) {
+	if(func_name == undefined)
+		func_name = func.parseName();
+	this.prototype[func_name] = func;
 };
 
+//TODO: What about inheriting the constructors??? test test test
 Function.prototype.inherit = function(classes) {
 	var i = 0;
 	var _classes = [];
@@ -216,23 +219,21 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
-ivar.Func = function(parent, functions) {
-	this.parent = parent;
-	this.functions = functions;
-	this.fn = function() {
+ivar.def = function(functions, parent) {
+	return function() {
 		var types = [];
 		var args = [];
 		ivar.eachArg(arguments, function(i, elem) {
 			args.push(elem);
 			types.push(whatis(elem));
 		});
-		if(this.functions.hasOwnProperty(types.join())) {
-			return this.functions[types.join()].apply(parent, args);
+		if(functions.hasOwnProperty(types.join())) {
+			return functions[types.join()].apply(parent, args);
 		} else {
 			if(typeof functions == 'function')
-				return this.functions.apply(parent, args);
-			if(this.functions.hasOwnProperty('default'))
-				return this.functions['default'].apply(parent, args);		
+				return functions.apply(parent, args);
+			if(functions.hasOwnProperty('default'))
+				return functions['default'].apply(parent, args);		
 		}
 	};
 };
