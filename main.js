@@ -227,8 +227,9 @@ ivar.def = function(functions, parent) {
 			args.push(elem);
 			types.push(whatis(elem));
 		});
-		if(functions.hasOwnProperty(types.join())) {
-			return functions[types.join()].apply(parent, args);
+		var key = types.join();
+		if(functions.hasOwnProperty(key)) {
+			return functions[key].apply(parent, args);
 		} else {
 			if (typeof functions === 'function')
 				return functions.apply(parent, args);
