@@ -215,8 +215,8 @@ ivar.net.Communication.prototype.receive = function(obj) {
 	var sentObj = this.sent.get(obj.id);
 	var status = ivar.net.httpResponseStatus(obj.status);
 	
-	if (status.type == 2) {
-		if (status.code != 200)
+	if (status.type === 2) {
+		if (status.code !== 200)
 			ivar.warning(sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
 		var resp = obj.response_text;
 		var jsonBegin = resp.indexOf('{');
@@ -224,9 +224,11 @@ ivar.net.Communication.prototype.receive = function(obj) {
 		if(jsonBegin > 0) {
 			serverWarning = resp.substring(0, jsonBegin);
 			resp = resp.substring(jsonBegin, resp.lastIndexOf('}') + 1);
+		} else if (jsonBegin === -1) {
+			ivar.error('[server-error]: '+resp);
 		}
 
-		if (ivar.isSet(serverWarning) && (serverWarning != ''))
+		if (ivar.isSet(serverWarning) && (serverWarning !== ''))
 			ivar.warning('[server-warning]: '+sentObj.request.method, serverWarning);
 		
 		//TODO: Parse response_text to JSON depending on response_type

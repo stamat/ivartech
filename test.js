@@ -26,7 +26,7 @@ function asd() {
 	//st.put('foo');
 	//st.put('fool');
 	
-	var f = fn(null, {
+	var f = def({
 		'int': function(a) {
 			return a+1;
 		},
@@ -62,7 +62,7 @@ function asd() {
 		this.test = '2';
 	}
 	
-	Lol.def(function rofl(){return 'lolzors'});
+	Lol.method(function rofl(){return 'lolzors'});
 	
 	function Rofl() {
 	
@@ -72,7 +72,7 @@ function asd() {
 		this.genitals = true;
 	};
 	
-	Animal.def(function say(){
+	Animal.method(function say(){
 		print(this.says);
 	});
 	

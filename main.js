@@ -7,8 +7,8 @@
  *	@namespace	ivar
  */
 
-if (ivar == undefined) var ivar = {};
-if ($i == undefined) var $i = ivar;
+if (ivar === undefined) var ivar = {};
+if ($i === undefined) var $i = ivar;
 
 ivar.DEBUG = true;
 ivar.LOADED = false;
@@ -41,7 +41,7 @@ Math.rand = function(min, max) {
 */
 
 Number.prototype.roundFloat = function(decimals) {
-	if (decimals == undefined)
+	if (decimals === undefined)
 		decimals = 2;
 	var dec = Math.pow(10, decimals);
 	return Math.round(this*dec)/dec;
@@ -55,7 +55,7 @@ Array.prototype.find = function(value, field) {
 	if (this.length > 0)
 		for (var i = 0; i < this.length; i++) {
 			var elem = this[i];
-			if ((field != undefined) && ((typeof elem == 'object') || (elem.hasOwnProperty('slice') && elem.hasOwnProperty('length'))))
+			if ((field !== undefined) && ((typeof elem === 'object') || (elem.hasOwnProperty('slice') && elem.hasOwnProperty('length'))))
 				elem = this[i][field];
 			if (elem === value)
 				return i;
@@ -92,10 +92,10 @@ Array.prototype.equal = function(arr) {
 	var self = this;
 	if(self === arr)
 		return true;
-	if(self.length != arr.length)
+	if(self.length !== arr.length)
 		return false;
 	self.each(function(i){
-		if (self[i] != arr[i])
+		if (self[i] !== arr[i])
 			return false;
 	});
 	return true;
@@ -118,7 +118,7 @@ Array.prototype.insert = function(id, value) {
 if (!String.prototype.hasOwnProperty('startsWith'))
 String.prototype.startsWith = function(str, pos) {
 	var prefix = this.substring(pos, str.length);
-	return prefix == str;
+	return prefix === str;
 };
 
 if (!String.prototype.hasOwnProperty('endsWith'))
@@ -126,7 +126,7 @@ String.prototype.endsWith = function(str, pos) {
 	if(!pos)
 		pos = this.length;
 	var sufix = this.substring(pos - str.length, pos);
-	return sufix == str;
+	return sufix === str;
 };
 
 if (!String.prototype.hasOwnProperty('trim'))
@@ -165,7 +165,7 @@ String.prototype.getFirst = Array.prototype.getFirst;
 String.prototype.getLast = Array.prototype.getLast;
 
 String.prototype.insert = function(what, where) {
-	if (typeof where == 'string')
+	if (typeof where === 'string')
 		where = this.indexOf(where);
 	var res = [];
 	res.push(this.substring(0, where));
@@ -182,11 +182,11 @@ String.prototype.swap = function(what, with_this, only_first) {
 };
 
 String.prototype.hasUpperCase = function() {
-	return this != this.toLowerCase() ? true : false;
+	return this !== this.toLowerCase() ? true : false;
 };
 
 String.prototype.hasLowerCase = function() {
-	return this.toUpperCase() != this ? true : false;
+	return this.toUpperCase() !== this ? true : false;
 };
 
 Function.prototype.parseName = function() {
@@ -194,7 +194,7 @@ Function.prototype.parseName = function() {
 };
 
 Function.prototype.method = function(func, func_name) {
-	if(func_name == undefined)
+	if(func_name === undefined)
 		func_name = func.parseName();
 	this.prototype[func_name] = func;
 };
@@ -206,7 +206,7 @@ Function.prototype.inherit = function(classes) {
 	while (arguments.hasOwnProperty(i)) {
 		_classes.push(arguments[i]);
 		var inst = arguments[i];
-		if(typeof inst == 'function')
+		if(typeof inst === 'function')
 			inst = new inst();
 		
 		for (var j in inst)
@@ -214,7 +214,7 @@ Function.prototype.inherit = function(classes) {
 		i++;
 	}
 	
-	if (_classes.length == 1)
+	if (_classes.length === 1)
 		_classes = _classes[0];
 	this.prototype['__super__'] = _classes;
 };
@@ -230,9 +230,9 @@ ivar.def = function(functions, parent) {
 		if(functions.hasOwnProperty(types.join())) {
 			return functions[types.join()].apply(parent, args);
 		} else {
-			if(typeof functions == 'function')
+			if (typeof functions === 'function')
 				return functions.apply(parent, args);
-			if(functions.hasOwnProperty('default'))
+			if (functions.hasOwnProperty('default'))
 				return functions['default'].apply(parent, args);		
 		}
 	};
@@ -337,7 +337,7 @@ ivar.require = function(script_name) {
  *	@return	{boolean}
  */
 ivar.isSet = function(val) {
-	return (val != undefined) && (val != null);
+	return (val !== undefined) && (val !== null);
 };
 
 /**
@@ -398,7 +398,7 @@ ivar.warning = function warning(e) {
  *	@param	{any}	e		Message in a form of a string or any other object that can be presented in console
  */
 ivar.error = function error(e) {
-	if (!ivar.isSet(arguments[0]) || (arguments[0] == '') || (arguments[0] == ' '))
+	if (!ivar.isSet(arguments[0]) || (arguments[0] === '') || (arguments[0] === ' '))
 		arguments[0] = '[ERROR]: in function "' + arguments.callee.caller.parseName() + '"';
 	var args = [];
 	args.push('error');
@@ -413,10 +413,10 @@ ivar.setDebugOutput = function(fn) {
 };
 
 ivar._private.consolePrint = function(obj) {
-	if (obj.msgs.length == 0) {
+	if (obj.msgs.length === 0) {
 		console[obj.type](obj.title);
 	} else {
-		if((obj.type == 'log') || (obj.type == 'warn'))
+		if((obj.type === 'log') || (obj.type === 'warn'))
 			console.groupCollapsed(obj.title);
 		else
 			console.group(obj.title);
@@ -430,7 +430,7 @@ ivar._private.consolePrint = function(obj) {
 };
 
 ivar._private.alertPrint = function(obj) {
-	if (obj.msgs.length == 0) {
+	if (obj.msgs.length === 0) {
 		alert('[' + obj.type + '] ' + obj.title);
 	} else {
 		var resMsg = ['[' + obj.type + '] ' +obj.title, '------'];
@@ -489,6 +489,8 @@ ivar.isArray = function(val) {
 
 ivar.isNumber = function(val) {
 	var type = ivar.whatis(val);
+	if(isNaN(val))
+		return false;
 	return (type === 'int') || (type === 'float') || (type === 'NaN');
 };
 
@@ -530,23 +532,21 @@ ivar.whatis = function(val) {
 	var type = typeof val;
 	
 	if(type === 'object') {
-		if(ivar.isSet(val.length) && ivar.isSet(val.push))
+		if(val.hasOwnProperty('length') && val.hasOwnProperty('push'))
 			return 'array';
-		if(ivar.isSet(val.getDate))
+		if(val.hasOwnProperty('getDate') && val.hasOwnProperty('toLocaleTimeString'))
 			return 'date';
-		if(ivar.isSet(val.toExponential))
+		if(val.hasOwnProperty('toExponential'))
 			type = 'number';
-		if(ivar.isSet(val.substring) && ivar.isSet(val.length))
+		if(val.hasOwnProperty('substring') && val.hasOwnProperty('length'))
 			return 'string';
 	}
 	
 	if(type === 'number') {
-		if(!isNaN(val))
-			if(val.toString().indexOf('.') > 0)
-				return 'float';
-			else
-				return 'int';
-		return 'NaN';
+		if(val.toString().indexOf('.') > 0)
+			return 'float';
+		else
+			return 'int';
 	}
 	
 	return type;
@@ -578,15 +578,16 @@ ivar.parseText = function(sValue) {
  *	@param	{object}	obj2	Any object with properties
  *	@return	{boolean}			True if equal
  */
+//TODO: recursive check for child objects
 ivar.equal = function(obj1, obj2) {
 	if (obj1 === obj2)
 		return true;
 	for (var i in obj1) {
-		if (obj1[i] != obj2[i])
+		if (obj1[i] !== obj2[i])
 			return false;
 	}
 	for (var i in obj2) {
-		if (obj2[i] != obj1[i])
+		if (obj2[i] !== obj1[i])
 			return false;
 	}
 	return true;
