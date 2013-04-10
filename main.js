@@ -241,7 +241,7 @@ ivar.def = function(functions, parent) {
 ivar.eachArg = function(args, fn) {
 	var i = 0;
 	while (args.hasOwnProperty(i)) {
-		if(fn != undefined)
+		if(fn !== undefined)
 			fn(i, args[i]);
 		i++;
 	}
@@ -491,7 +491,7 @@ ivar.isNumber = function(val) {
 	var type = ivar.whatis(val);
 	if(isNaN(val))
 		return false;
-	return (type === 'int') || (type === 'float') || (type === 'NaN');
+	return (type === 'int') || (type === 'float');
 };
 
 ivar.isInt = function(val) {

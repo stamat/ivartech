@@ -26,24 +26,35 @@ function asd() {
 	//st.put('foo');
 	//st.put('fool');
 	
-	var f = def({
+	var out = def({
 		'int': function(a) {
-			return a+1;
+			alert('Here is int '+a);
 		},
+		
+		'float': function(a) {
+			alert('Here is float '+a);
+		},
+		
 		'string': function(a) {
-			return a+'a';
+			alert('Here is string '+a);
 		},
+		
 		'int,string': function(a, b) {
-			return a+b;
+			alert('Here is an int '+a+' and a string '+b);
 		},
 		'default': function(obj) {
-			return obj;
+			alert('Here is some other value '+ obj);
 		}
 		
 	});
 	
-	print(f({a: 1}));
+	out('ten');
+	out(1);
+	out(2, 'robot');
+	out(2.5);
+	out(true);
 	
+		
 	var u = setUniqueObject().__uid__;
 	print(u);
 	print(window[u]);
