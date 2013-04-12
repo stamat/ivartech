@@ -3,11 +3,7 @@ require('ivar.test.*');
 require('ivar.patt.Events');
 require('ivar.data.StringTree');
 require('ivar.data.Graph');
-
-function arg() {
-	var a = {'jen': 1, 'dva': 2};
-	ivar.eachArg(arguments, function(i){alert(i)});
-}
+require('http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
 
 function test() {
 	ivar.print(a);
@@ -47,13 +43,7 @@ function asd() {
 		}
 		
 	});
-	
-	out('ten');
-	out(1);
-	out(2, 'robot');
-	out(2.5);
-	out(true);
-	
+
 		
 	var u = setUniqueObject().__uid__;
 	print(u);

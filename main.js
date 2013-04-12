@@ -255,8 +255,8 @@ ivar.findScriptPath = function(script_name) {
 		if (script_elems[i].src.endsWith(script_name)) {
 			var href = window.location.href;
 			href = href.substring(0, href.lastIndexOf('/'));
-			var url = script_elems[i].src.removeSufix('main.js');
-			return url.substring(href.length, url.length).removeFirst();
+			var url = script_elems[i].src.removeSufix(script_name);
+			return url.substring(href.length+1, url.length);
 		}
 	}
 	return '';
@@ -280,7 +280,7 @@ ivar.injectScript = function(script_name, uri, callback, prepare) {
 	script_elem.type = 'text/javascript';
 	script_elem.title = script_name;
 	script_elem.src = uri;
-	script_elem.async = false;
+	script_elem.async = true;
 	script_elem.defer = false;
 	
 	if(ivar.isSet(callback))
@@ -314,7 +314,7 @@ ivar.referenceInNamespace = function(object, target) {
 	}
 };
 
-ivar._private.injectScriptCallback = function(script_name, uri) {
+ivar._private.requireCallback = function(script_name, uri) {
 	ivar._private.loading.length--;
 	delete ivar._private.loading.scripts[script_name];
 	ivar._private.imported[script_name] = uri;
@@ -323,25 +323,40 @@ ivar._private.injectScriptCallback = function(script_name, uri) {
 		ivar._private.onReady();
 };
 
-ivar._private.injectScriptPrepare = function(script_name, uri) {
+ivar._private.requirePrepare = function(script_name, uri) {
 	ivar._private.loading.scripts[script_name] = uri;
 	ivar._private.loading.length++;
 };
 
-ivar.require = function(script_name) {
+ivar.namespaceToUri = function(script_name, url) {
 	var np = script_name.split('.');
-	if (np.getLast() == '*') {
+	if (np.getLast() === '*') {
 		np.pop();
 		np.push('_all');
 	}
+	
+	if(!ivar.isSet(url))
+		url = '';
 		
 	script_name = np.join('.');
-	var uri = ivar._private.libpath + np.join('/')+'.js';
+	return  url + np.join('/')+'.js';
+};
+
+ivar.require = function(script_name) {
+	var uri = '';
+	if (script_name.startsWith('http://')) {
+		uri = script_name;
+		var lastSlash = uri.lastIndexOf('/');
+		script_name = uri.substring(lastSlash+1, uri.length);
+	} else {
+		uri = ivar.namespaceToUri(script_name, ivar._private.libpath);
+	}
+	
 	if (!ivar._private.loading.scripts.hasOwnProperty(script_name) 
 	 && !ivar._private.imported.hasOwnProperty(script_name)) {
 		ivar.injectScript(script_name, uri, 
-			ivar._private.injectScriptCallback, 
-				ivar._private.injectScriptPrepare);
+			ivar._private.requireCallback, 
+				ivar._private.requirePrepare);
 	}
 };
 
