@@ -344,7 +344,7 @@ ivar.namespaceToUri = function(script_name, url) {
 
 ivar.require = function(script_name) {
 	var uri = '';
-	if (script_name.startsWith('http://')) {
+	if (script_name.indexOf('/') > -1) {
 		uri = script_name;
 		var lastSlash = uri.lastIndexOf('/');
 		script_name = uri.substring(lastSlash+1, uri.length);

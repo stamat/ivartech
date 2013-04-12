@@ -1,4 +1,4 @@
-require('ivar.html');
+require('ivar/html.js');
 require('ivar.test.*');
 require('ivar.patt.Events');
 require('ivar.data.StringTree');
