@@ -19,7 +19,7 @@ ivar._private.loading = {
 	scripts: {},
 	length: 0
 };
-ivar._private.onReadyFnStack = [];
+ivar._private.on_ready_fn_stack = [];
 ivar._private.libname = 'ivar';
 
 ivar._global = this;
@@ -248,10 +248,10 @@ ivar.eachArg = function(args, fn) {
 	return i-1;
 };
 
-ivar._private.findLibPath = function() {
+ivar.findScriptPath = function(script_name) {
 	var script_elems = document.getElementsByTagName('script');
 	for (var i = 0; i < script_elems.length; i++) {
-		if (script_elems[i].src.endsWith('main.js')) {
+		if (script_elems[i].src.endsWith(script_name)) {
 			var href = window.location.href;
 			href = href.substring(0, href.lastIndexOf('/'));
 			var url = script_elems[i].src.removeSufix('main.js');
@@ -263,16 +263,17 @@ ivar._private.findLibPath = function() {
 
 ivar._private.onReady = function() {
 	if(!ivar.LOADED) {
-		ivar._private.onReadyFnStack.each(function(i, obj){
-			ivar._private.onReadyFnStack[i]();
+		ivar._private.on_ready_fn_stack.each(function(i, obj){
+			ivar._private.on_ready_fn_stack[i]();
 		});
 		ivar.LOADED = true;
 	}
 };
 
-ivar._private.injectScript = function(script_name, uri) {
-	ivar._private.loading.scripts[script_name] = uri;
-	ivar._private.loading.length++;
+ivar.injectScript = function(script_name, uri, callback, prepare) {
+	
+	if(ivar.isSet(prepare))
+		prepare(script_name, uri);
 	
 	var script_elem = document.createElement('script');
 	script_elem.type = 'text/javascript';
@@ -281,14 +282,11 @@ ivar._private.injectScript = function(script_name, uri) {
 	script_elem.async = false;
 	script_elem.defer = false;
 	
-	script_elem.onload = function() {
-		ivar._private.loading.length--;
-		delete ivar._private.loading.scripts[script_name];
-		ivar._private.imported[script_name] = uri;
-		ivar.referenceInNamespace(ivar);
-		if(ivar._private.loading.length == 0)
-			ivar._private.onReady();
-	}
+	if(ivar.isSet(callback))
+		script_elem.onload = function() {
+				callback(script_name, uri);
+		};
+	
 	document.getElementsByTagName('head')[0].appendChild(script_elem);
 };
 
@@ -313,7 +311,21 @@ ivar.referenceInNamespace = function(object, target) {
 		if (!ivar.isGlobal(i, target) && !ivar.isPrivate(i) && !ivar.isConstant(i))
 			ivar._global[i] = ivar[i];
 	}
-}
+};
+
+ivar._private.injectScriptCallback = function(script_name, uri) {
+	ivar._private.loading.length--;
+	delete ivar._private.loading.scripts[script_name];
+	ivar._private.imported[script_name] = uri;
+	ivar.referenceInNamespace(ivar);
+	if(ivar._private.loading.length == 0)
+		ivar._private.onReady();
+};
+
+ivar._private.injectScriptPrepare = function(script_name, uri) {
+	ivar._private.loading.scripts[script_name] = uri;
+	ivar._private.loading.length++;
+};
 
 ivar.require = function(script_name) {
 	var np = script_name.split('.');
@@ -326,7 +338,9 @@ ivar.require = function(script_name) {
 	var uri = ivar._private.libpath + np.join('/')+'.js';
 	if (!ivar._private.loading.scripts.hasOwnProperty(script_name) 
 	 && !ivar._private.imported.hasOwnProperty(script_name)) {
-		ivar._private.injectScript(script_name, uri);
+		ivar.injectScript(script_name, uri, 
+			ivar._private.injectScriptCallback, 
+				ivar._private.injectScriptPrepare);
 	}
 };
 
@@ -763,9 +777,11 @@ ivar.sortObjectsBy = function(arr, field, desc, type) {
 	return arr.sort(func);
 };
 
-ivar.namespace = function(str) {
+ivar.namespace = function(str, root) {
 	var chunks = str.split('.');
-	var current = ivar._global;
+	if(!ivar.isSet(root))
+		root = ivar._global;
+	var current = root;
 	chunks.each(function(i, elem){
 		if(!current.hasOwnProperty(elem))
 			current[elem] = {};
@@ -776,8 +792,8 @@ ivar.namespace = function(str) {
 
 
 ivar.ready = function(fn) {
-	ivar._private.onReadyFnStack.push(fn);
+	ivar._private.on_ready_fn_stack.push(fn);
 };
 
-ivar._private.libpath = ivar._private.findLibPath();
+ivar._private.libpath = ivar.findScriptPath('main.js');
 ivar.referenceInNamespace(ivar);
