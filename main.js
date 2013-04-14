@@ -90,9 +90,9 @@ String.prototype.each = Array.prototype.each;
 //TODO: test == ===
 Array.prototype.equal = function(arr) {
 	var self = this;
-	if(self === arr)
+	if (self === arr)
 		return true;
-	if(self.length !== arr.length)
+	if (self.length !== arr.length)
 		return false;
 	self.each(function(i){
 		if (self[i] !== arr[i])
@@ -123,7 +123,7 @@ String.prototype.startsWith = function(str, pos) {
 
 if (!String.prototype.hasOwnProperty('endsWith'))
 String.prototype.endsWith = function(str, pos) {
-	if(!pos)
+	if (!pos)
 		pos = this.length;
 	var sufix = this.substring(pos - str.length, pos);
 	return sufix === str;
@@ -194,7 +194,7 @@ Function.prototype.parseName = function() {
 };
 
 Function.prototype.method = function(func, func_name) {
-	if(func_name === undefined)
+	if (func_name === undefined)
 		func_name = func.parseName();
 	this.prototype[func_name] = func;
 };
@@ -206,7 +206,7 @@ Function.prototype.inherit = function(classes) {
 	while (arguments.hasOwnProperty(i)) {
 		_classes.push(arguments[i]);
 		var inst = arguments[i];
-		if(typeof inst === 'function')
+		if (typeof inst === 'function')
 			inst = new inst();
 		
 		for (var j in inst)
@@ -228,7 +228,7 @@ ivar.def = function(functions, parent) {
 			types.push(whatis(elem));
 		});
 		var key = types.join();
-		if(functions.hasOwnProperty(key)) {
+		if (functions.hasOwnProperty(key)) {
 			return functions[key].apply(parent, args);
 		} else {
 			if (typeof functions === 'function')
@@ -242,7 +242,7 @@ ivar.def = function(functions, parent) {
 ivar.eachArg = function(args, fn) {
 	var i = 0;
 	while (args.hasOwnProperty(i)) {
-		if(fn !== undefined)
+		if (fn !== undefined)
 			fn(i, args[i]);
 		i++;
 	}
@@ -263,27 +263,29 @@ ivar.findScriptPath = function(script_name) {
 };
 
 ivar._private.onReady = function() {
-	if(!ivar.LOADED) {
-		ivar._private.on_ready_fn_stack.each(function(i, obj){
+	if (!ivar.LOADED) {
+		ivar._private.on_ready_fn_stack.each(function(i, obj) {
 			ivar._private.on_ready_fn_stack[i]();
 		});
 		ivar.LOADED = true;
 	}
 };
 
-ivar.injectScript = function(script_name, uri, callback, prepare) {
+ivar.injectScript = function(script_name, uri, callback, prepare, async) {
 	
-	if(ivar.isSet(prepare))
+	if (ivar.isSet(prepare))
 		prepare(script_name, uri);
 	
 	var script_elem = document.createElement('script');
 	script_elem.type = 'text/javascript';
 	script_elem.title = script_name;
 	script_elem.src = uri;
-	script_elem.async = true;
+	if(!ivar.isSet(async))
+		async = false;
+	script_elem.async = async;
 	script_elem.defer = false;
 	
-	if(ivar.isSet(callback))
+	if (ivar.isSet(callback))
 		script_elem.onload = function() {
 				callback(script_name, uri);
 		};
@@ -292,7 +294,7 @@ ivar.injectScript = function(script_name, uri, callback, prepare) {
 };
 
 ivar.isGlobal = function(var_name, root) {
-	if(!ivar.isSet(root))
+	if (!ivar.isSet(root))
 		root = ivar._global;
 	return root.hasOwnProperty(var_name); 
 };
@@ -319,7 +321,7 @@ ivar._private.requireCallback = function(script_name, uri) {
 	delete ivar._private.loading.scripts[script_name];
 	ivar._private.imported[script_name] = uri;
 	ivar.referenceInNamespace(ivar);
-	if(ivar._private.loading.length == 0)
+	if (ivar._private.loading.length == 0)
 		ivar._private.onReady();
 };
 
@@ -333,22 +335,26 @@ ivar.namespaceToUri = function(script_name, url) {
 	if (np.getLast() === '*') {
 		np.pop();
 		np.push('_all');
+	} else if (np.getLast() === 'js') {
+		np.pop();
 	}
 	
-	if(!ivar.isSet(url))
+	if (!ivar.isSet(url))
 		url = '';
 		
 	script_name = np.join('.');
 	return  url + np.join('/')+'.js';
 };
 
-ivar.require = function(script_name) {
+//TODO: test it;
+ivar.require = function(script_name, async) {
 	var uri = '';
 	if (script_name.indexOf('/') > -1) {
 		uri = script_name;
 		var lastSlash = uri.lastIndexOf('/');
 		script_name = uri.substring(lastSlash+1, uri.length);
 	} else {
+		
 		uri = ivar.namespaceToUri(script_name, ivar._private.libpath);
 	}
 	
@@ -356,7 +362,7 @@ ivar.require = function(script_name) {
 	 && !ivar._private.imported.hasOwnProperty(script_name)) {
 		ivar.injectScript(script_name, uri, 
 			ivar._private.requireCallback, 
-				ivar._private.requirePrepare);
+				ivar._private.requirePrepare, async);
 	}
 };
 
@@ -446,7 +452,7 @@ ivar._private.consolePrint = function(obj) {
 	if (obj.msgs.length === 0) {
 		console[obj.type](obj.title);
 	} else {
-		if((obj.type === 'log') || (obj.type === 'warn'))
+		if ((obj.type === 'log') || (obj.type === 'warn'))
 			console.groupCollapsed(obj.title);
 		else
 			console.group(obj.title);
@@ -486,19 +492,20 @@ ivar.systemMessage = function(fn, msg) {
 		msgs: []
 	};
 
-	if(multi) {
+	if (multi) {
 		ivar.eachArg(arguments, function(i, elem){
 			if (i > 1)
 				obj.msgs.push(elem);
 		});
 	}
 		
-	if(consoleExists && ivar.DEBUG)
+	if (consoleExists && ivar.DEBUG)
 		ivar._private.consolePrint(obj);
-	if(ivar.isSet(ivar._private.output))
+	if (ivar.isSet(ivar._private.output))
 		ivar._private.output(obj);
-	if(!consoleExists && ivar.DEBUG)
-		ivar._private.alertPrint(obj);
+	else
+		if (!consoleExists && ivar.DEBUG)
+			ivar._private.alertPrint(obj);
 };
 
 ivar.is = function(obj, type) {
@@ -518,10 +525,9 @@ ivar.isArray = function(val) {
 };
 
 ivar.isNumber = function(val) {
-	var type = ivar.whatis(val);
-	if(isNaN(val))
+	if (isNaN(val))
 		return false;
-	return (type === 'int') || (type === 'float');
+	return typeof val === 'number';
 };
 
 ivar.isInt = function(val) {
@@ -552,28 +558,36 @@ ivar.isBool = function(val) {
 	return ivar.is(val, 'boolean');
 };
 
+ivar.isNull = function(val) {
+	return val === null;
+};
+
+ivar.isUndefined = function(val) {
+	return val === undefined;
+};
+
 ivar.whatis = function(val) {
 
-	if(val === undefined)
+	if (val === undefined)
 		return 'undefined';
-	if(val === null)
+	if (val === null)
 		return 'null';
 		
 	var type = typeof val;
 	
-	if(type === 'object') {
-		if(val.hasOwnProperty('length') && val.hasOwnProperty('push'))
+	if (type === 'object') {
+		if (val.hasOwnProperty('length') && val.hasOwnProperty('push'))
 			return 'array';
-		if(val.hasOwnProperty('getDate') && val.hasOwnProperty('toLocaleTimeString'))
+		if (val.hasOwnProperty('getDate') && val.hasOwnProperty('toLocaleTimeString'))
 			return 'date';
-		if(val.hasOwnProperty('toExponential'))
+		if (val.hasOwnProperty('toExponential'))
 			type = 'number';
-		if(val.hasOwnProperty('substring') && val.hasOwnProperty('length'))
+		if (val.hasOwnProperty('substring') && val.hasOwnProperty('length'))
 			return 'string';
 	}
 	
-	if(type === 'number') {
-		if(val.toString().indexOf('.') > 0)
+	if (type === 'number') {
+		if (val.toString().indexOf('.') > 0)
 			return 'float';
 		else
 			return 'int';
@@ -686,7 +700,7 @@ ivar.find = function(obj, val) {
 };
 
 ivar.uid = function(saltSize) {
-	if (!isSet(saltSize))
+	if (!ivar.isSet(saltSize))
 		saltSize = 100;
 	var i = 97;
 	if (Math.rand(0, 1) == 0)
@@ -696,12 +710,12 @@ ivar.uid = function(saltSize) {
 };
 
 ivar.setUniqueObject = function(obj, collection) {
-	if(!ivar.isSet(obj))
+	if (!ivar.isSet(obj))
 		obj = {};
-	if(!ivar.isSet(collection))
+	if (!ivar.isSet(collection))
 		collection = ivar._global;
 	var uid = ivar.uid();
-	while(collection[uid])
+	while (collection[uid])
 		uid = ivar.uid();
 	obj.__uid__ = uid;
 	
@@ -712,16 +726,16 @@ ivar.setUniqueObject = function(obj, collection) {
 //XXX: move to another file
 ivar.mapArray = function(arr, field) {
 	var mapped = [];
-	for(var i = 0; i< arr.length; i++) {
+	for (var i = 0; i< arr.length; i++) {
 		var value = arr[i];
-		if(isSet(field))
+		if (ivar.isSet(field))
 			value = arr[i][field]
-		if (isFunction(value))
+		if (ivar.isFunction(value))
 			value = value.parseName();
-		if (isDate(value))
+		if (ivar.isDate(value))
 			value = value.now();
-		if (isString(value) || isNumber(value))
-			if(isSet(field))
+		if (ivar.isString(value) || ivar.isNumber(value))
+			if (ivar.isSet(field))
 				mapped[value] = arr[i];
 			else
 				mapped[value] = i;
@@ -737,12 +751,12 @@ ivar.sortObjectsBy = function(arr, field, desc, type) {
 		return [];
 	
 	if(!ivar.isSet(type))
-		type = typeof arr[0][field];
+		type = ivar.whatis(arr[0][field]);
 	
 	if(!ivar.isSet(desc))
 		desc = false;
 	
-	if(ivar.isNumber(type)) {
+	if(ivar.isNumber(arr[0][field])) {
 		if(!desc) {
 			func = function(a, b) {
 				return a[field]-b[field];
@@ -752,7 +766,7 @@ ivar.sortObjectsBy = function(arr, field, desc, type) {
 				return b[field]-a[field];
 			};
 		}
-	} else if(ivar.isString(type)) {
+	} else if(type === 'string') {
 		if(!desc) {
 			func = function(a, b) {
 				var fieldA = a[field].toLowerCase();
@@ -774,7 +788,7 @@ ivar.sortObjectsBy = function(arr, field, desc, type) {
 				return 0;
 			};
 		}
-	} else if(ivar.isDate(type)) {
+	} else if(type === 'date') {
 		if(!desc) {
 			func = function(a, b) {
 				var fieldA = new Date(a[field]);
@@ -795,11 +809,11 @@ ivar.sortObjectsBy = function(arr, field, desc, type) {
 
 ivar.namespace = function(str, root) {
 	var chunks = str.split('.');
-	if(!ivar.isSet(root))
+	if (!ivar.isSet(root))
 		root = ivar._global;
 	var current = root;
 	chunks.each(function(i, elem){
-		if(!current.hasOwnProperty(elem))
+		if (!current.hasOwnProperty(elem))
 			current[elem] = {};
 		current = current[elem];
 	});

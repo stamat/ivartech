@@ -4,6 +4,8 @@ require('ivar.patt.Events');
 require('ivar.data.StringTree');
 require('ivar.data.Graph');
 require('http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
+require('ivar.net.Communication');
+
 
 function test() {
 	ivar.print(a);
@@ -43,7 +45,6 @@ function asd() {
 		}
 		
 	});
-
 		
 	var u = setUniqueObject().__uid__;
 	print(u);
