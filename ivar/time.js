@@ -36,3 +36,8 @@ function fancyDate(then, now, suffix) {
 		return passed + 's '+suffix;
 	}
 };
+
+function utcTimestamp() {
+	var now = new Date;
+	return now.getTime() + now.getTimezoneOffset()*60*1000;
+}
