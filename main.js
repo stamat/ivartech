@@ -111,6 +111,16 @@ Array.prototype.insert = function(id, value) {
 	return this.splice(id, 0, value);
 };
 
+Array.prototype.shuffle = function() {
+	var res = [];
+	while(this.length !== 0) {
+		var id = Math.floor(Math.random() * this.length);
+		res.push(this[id]);
+		this.splice(id, 1);
+	}
+    return res;
+};
+
 /*
 	STRING prototypes
 */
