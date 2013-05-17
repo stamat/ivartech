@@ -735,7 +735,7 @@ ivar.setUniqueObject = function(obj, collection) {
 
 //XXX: move to another file
 ivar.mapArray = function(arr, field) {
-	var mapped = [];
+	var mapped = {};
 	for (var i = 0; i< arr.length; i++) {
 		var value = arr[i];
 		if (ivar.isSet(field))
@@ -743,12 +743,12 @@ ivar.mapArray = function(arr, field) {
 		if (ivar.isFunction(value))
 			value = value.parseName();
 		if (ivar.isDate(value))
-			value = value.now();
-		if (ivar.isString(value) || ivar.isNumber(value))
-			if (ivar.isSet(field))
-				mapped[value] = arr[i];
-			else
-				mapped[value] = i;
+			value = value.getTime();
+		if (ivar.isNumber(value))
+			value = value.toString();
+			
+		if (ivar.isString(value))
+			mapped[value] = i;
 	}
 	return mapped;
 };
