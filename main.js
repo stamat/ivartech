@@ -199,6 +199,19 @@ String.prototype.hasLowerCase = function() {
 	return this.toUpperCase() !== this ? true : false;
 };
 
+String.prototype.templater = function(obj, opened, closed) {
+	opened = opened || '{{';
+	closed = closed || '}}';	
+	//TODO: can be faster and smarter!
+	var str = this;
+	
+	for(var i in obj) {
+		str = str.swap(opened+i+closed, obj[i]);
+	}
+	
+	return str;
+};
+
 Function.prototype.parseName = function() {
 	return /function\s+([a-zA-Z0-9_\$]+?)\s*\(/g.exec(this.toString())[1];
 };
@@ -576,6 +589,17 @@ ivar.isUndefined = function(val) {
 	return val === undefined;
 };
 
+
+//Thanks to perfectionkills.com <http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/>
+ivar.getClass = function(val) {
+	return Object.prototype.toString.call(val)
+		.match(/^\[object\s(.*)\]$/)[1];
+};
+
+ivar.getClassName = function(val) {
+	return val.constructor.parseName();
+}
+
 ivar.whatis = function(val) {
 
 	if (val === undefined)
@@ -585,16 +609,8 @@ ivar.whatis = function(val) {
 		
 	var type = typeof val;
 	
-	if (type === 'object') {
-		if (val.hasOwnProperty('length') && val.hasOwnProperty('push'))
-			return 'array';
-		if (val.hasOwnProperty('getDate') && val.hasOwnProperty('toLocaleTimeString'))
-			return 'date';
-		if (val.hasOwnProperty('toExponential'))
-			type = 'number';
-		if (val.hasOwnProperty('substring') && val.hasOwnProperty('length'))
-			return 'string';
-	}
+	if (type === 'object')
+		type = ivar.getClass(val).toLowerCase();
 	
 	if (type === 'number') {
 		if (val.toString().indexOf('.') > 0)
