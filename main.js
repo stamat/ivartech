@@ -569,6 +569,10 @@ ivar.isObject = function(val) {
 	return ivar.is(val, 'object');
 };
 
+ivar.isCustomObject = function(val) {
+	return ivar.getClass() === 'object';
+};
+
 ivar.isFunction = function(val) {
 	return ivar.is(val, 'function');
 };
