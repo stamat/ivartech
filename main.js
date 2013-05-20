@@ -27,6 +27,11 @@ ivar._global = this;
 ivar._private.output; //define debug output function, print your output somewhere else...
 
 
+ivar.regex = {};
+ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
+ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
+ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
+
 Math.randomArbitrary = function(min, max) {
   return Math.random() * (max - min) + min;
 };
@@ -212,8 +217,20 @@ String.prototype.templater = function(obj, opened, closed) {
 	return str;
 };
 
+String.prototype.toRegExp = function() {
+	var val = this;
+	if(!ivar.regex.regex.test(val))
+		val = '/'+val+'/';
+	var pts = ivar.regex.regex.exec(val);
+	try {
+		return new RegExp(pts[1], pts[2]);
+	} catch (e) {
+		return false;
+	}
+};
+
 Function.prototype.parseName = function() {
-	return /function\s+([a-zA-Z0-9_\$]+?)\s*\(/g.exec(this.toString())[1];
+	return ivar.regex.function_name.exec(this.toString())[1];
 };
 
 Function.prototype.method = function(func, func_name) {
@@ -583,6 +600,10 @@ ivar.isDate = function(val) {
 
 ivar.isBool = function(val) {
 	return ivar.is(val, 'boolean');
+};
+
+ivar.isRegExp = function(val) {
+	return ivar.is(val, 'regexp');
 };
 
 ivar.isNull = function(val) {
