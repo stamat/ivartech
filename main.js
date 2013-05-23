@@ -247,13 +247,14 @@ String.prototype.getFirst = Array.prototype.getFirst;
 
 String.prototype.getLast = Array.prototype.getLast;
 
-String.prototype.insert = function(what, where) {
+String.prototype.insert = function(what, where, end) {
 	if (typeof where === 'string')
 		where = this.indexOf(where);
+	end = end || where;
 	var res = [];
 	res.push(this.substring(0, where));
 	res.push(what);
-	res.push(this.substring(where, this.length));
+	res.push(this.substring(end, this.length));
 	return res.join('');
 };
 
@@ -277,7 +278,7 @@ String.prototype.template = function(obj, opened, closed) {
 		
 		var repl = obj[propertyName] || '';
 		
-		str = str.swap2(repl, id, end+closed.length);
+		str = str.insert(repl, id, end+closed.length);
 		
 		id = str.indexOf(opened, id+repl.length);
 	}
@@ -285,22 +286,12 @@ String.prototype.template = function(obj, opened, closed) {
 	return str;
 }
 
-String.prototype.swap = ivar.def({
-	'string,int,*int': function(str, start, end) {
-		var res = [];
-		end = end || start;
-		res.push(this.substring(0, start));
-		res.push(str);
-		res.push(this.substring(end, this.length));
-		return res.join('');
-	},
-	'string,string,*boolean': function(what, with_this, only_first) {
-		if (only_first)
+String.prototype.swap = function(what, with_this, only_first) {
+	if (only_first)
 			return this.replace(what, with_this);
-		var re = new RegExp(what+'+','g');
-		return this.replace(re, with_this);
-	}
-});
+	var re = new RegExp(what+'+','g');
+	return this.replace(re, with_this);
+};
 
 String.prototype.toRegExp = function() {
 	var val = this;
