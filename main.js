@@ -32,6 +32,74 @@ ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
 ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
 ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
 
+ivar.eachArg = function(args, fn) {
+	var i = 0;
+	while (args.hasOwnProperty(i)) {
+		if (fn !== undefined)
+			fn(i, args[i]);
+		i++;
+	}
+	return i-1;
+};
+
+ivar._private.buildFnList = function(str) {
+	var args = str.split(',');
+	var argSets = [];
+	var temp = [];
+	var pref = '*';
+	for(var i = 0; i < args.length; i++) {
+		var notMandatory = args[i].startsWith(pref);
+		if (notMandatory) {
+			if (argSets.length === 0)
+				argSets.push(temp.join());
+			args[i] = args[i].removePrefix(pref);
+			
+		}
+		
+		temp.push(args[i]);
+		
+		if (notMandatory)
+			argSets.push(temp.join());
+	}
+	if(argSets.length === 0)
+		argSets.push(temp.join());
+		
+	return argSets;
+};
+
+ivar.def = function(functions, parent) {
+	var fn = {};
+	if (typeof functions === 'function') {
+		fn = functions;
+	} else {
+		for(var i in functions) {
+			var argSets = ivar._private.buildFnList(i);
+		
+			for(var j = 0; j < argSets.length; j++) {
+				fn[argSets[j]] = functions[i];
+			}
+		}
+	}
+	
+	return function() {
+		var types = [];
+		var args = [];
+		ivar.eachArg(arguments, function(i, elem) {
+			args.push(elem);
+			types.push(whatis(elem));
+		});
+		var key = types.join();
+		if (fn.hasOwnProperty(key)) {
+			return fn[key].apply(parent, args);
+		} else {
+			if (typeof fn === 'function')
+				return fn.apply(parent, args);
+			if (fn.hasOwnProperty('default'))
+				return fn['default'].apply(parent, args);		
+		}
+	};
+};
+
 Math.randomArbitrary = function(min, max) {
   return Math.random() * (max - min) + min;
 };
@@ -189,13 +257,6 @@ String.prototype.insert = function(what, where) {
 	return res.join('');
 };
 
-String.prototype.swap = function(what, with_this, only_first) {
-	if (only_first)
-		return this.replace(what, with_this);
-	var re = new RegExp(what+'+','g');
-	return this.replace(re, with_this);
-};
-
 String.prototype.hasUpperCase = function() {
 	return this !== this.toLowerCase() ? true : false;
 };
@@ -204,18 +265,42 @@ String.prototype.hasLowerCase = function() {
 	return this.toUpperCase() !== this ? true : false;
 };
 
-String.prototype.templater = function(obj, opened, closed) {
+String.prototype.template = function(obj, opened, closed) {
 	opened = opened || '{{';
 	closed = closed || '}}';	
-	//TODO: can be faster and smarter!
 	var str = this;
+	var id = str.indexOf(opened);
 	
-	for(var i in obj) {
-		str = str.swap(opened+i+closed, obj[i]);
+	while (id > -1){
+		var end = str.indexOf(closed, id);
+		var propertyName = str.substring(id+opened.length, end);
+		
+		var repl = obj[propertyName] || '';
+		
+		str = str.swap2(repl, id, end+closed.length);
+		
+		id = str.indexOf(opened, id+repl.length);
 	}
 	
 	return str;
-};
+}
+
+String.prototype.swap = ivar.def({
+	'string,int,*int': function(str, start, end) {
+		var res = [];
+		end = end || start;
+		res.push(this.substring(0, start));
+		res.push(str);
+		res.push(this.substring(end, this.length));
+		return res.join('');
+	},
+	'string,string,*boolean': function(what, with_this, only_first) {
+		if (only_first)
+			return this.replace(what, with_this);
+		var re = new RegExp(what+'+','g');
+		return this.replace(re, with_this);
+	}
+});
 
 String.prototype.toRegExp = function() {
 	var val = this;
@@ -257,36 +342,6 @@ Function.prototype.inherit = function(classes) {
 	if (_classes.length === 1)
 		_classes = _classes[0];
 	this.prototype['__super__'] = _classes;
-};
-
-ivar.def = function(functions, parent) {
-	return function() {
-		var types = [];
-		var args = [];
-		ivar.eachArg(arguments, function(i, elem) {
-			args.push(elem);
-			types.push(whatis(elem));
-		});
-		var key = types.join();
-		if (functions.hasOwnProperty(key)) {
-			return functions[key].apply(parent, args);
-		} else {
-			if (typeof functions === 'function')
-				return functions.apply(parent, args);
-			if (functions.hasOwnProperty('default'))
-				return functions['default'].apply(parent, args);		
-		}
-	};
-};
-
-ivar.eachArg = function(args, fn) {
-	var i = 0;
-	while (args.hasOwnProperty(i)) {
-		if (fn !== undefined)
-			fn(i, args[i]);
-		i++;
-	}
-	return i-1;
 };
 
 ivar.findScriptPath = function(script_name) {
