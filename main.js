@@ -73,10 +73,14 @@ ivar.def = function(functions, parent) {
 		fn = functions;
 	} else {
 		for(var i in functions) {
-			var argSets = ivar._private.buildFnList(i);
+			if(i.indexOf('*') > -1) {
+				var argSets = ivar._private.buildFnList(i);
 		
-			for(var j = 0; j < argSets.length; j++) {
-				fn[argSets[j]] = functions[i];
+				for(var j = 0; j < argSets.length; j++) {
+					fn[argSets[j]] = functions[i];
+				}
+			} else {
+				fn[i] = functions[i];
 			}
 		}
 	}
