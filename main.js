@@ -93,7 +93,7 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
-//TODO: test == ===
+//TODO: test == ===, Conditions for Date and Object, recursion for array value
 Array.prototype.equal = function(arr) {
 	var self = this;
 	if (self === arr)
@@ -127,6 +127,7 @@ Array.prototype.shuffle = function() {
     return res;
 };
 
+//NOTE: Members of the array must be unique!
 Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {
@@ -723,13 +724,6 @@ ivar.isUndefined = function(val) {
 	return val === undefined;
 };
 
-
-//Thanks to perfectionkills.com <http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/>
-ivar.getClass = function(val) {
-	return Object.prototype.toString.call(val)
-		.match(/^\[object\s(.*)\]$/)[1];
-};
-
 ivar.getClassName = function(val) {
 	return val.constructor.parseName();
 }
@@ -754,22 +748,6 @@ ivar.whatis = function(val) {
 	}
 	
 	return type;
-};
-
-/**
- *	Parses string value into correct javascript data type
- *	@copyleft 2011 by Mozilla Developer Network
- *
- *	@param 	{string}	sValue
- *	@return {null|boolean|number|date}
- */
-ivar.parseText = function(sValue) {
-	var rIsNull = /^\s*$/, rIsBool = /^(?:true|false)$/i;
-	if (rIsNull.test(sValue)) { return null; }
-	if (rIsBool.test(sValue)) { return sValue.toLowerCase() === "true"; }
-	if (isFinite(sValue)) { return parseFloat(sValue); }
-	if (isFinite(Date.parse(sValue))) { return new Date(sValue); }
-	return sValue;
 };
 
 
@@ -883,6 +861,48 @@ ivar.setUniqueObject = function(obj, collection) {
 	return obj;
 };
 
+ivar.namespace = function(str, root) {
+	var chunks = str.split('.');
+	if (!ivar.isSet(root))
+		root = ivar._global;
+	var current = root;
+	chunks.each(function(i, elem){
+		if (!current.hasOwnProperty(elem))
+			current[elem] = {};
+		current = current[elem];
+	});
+	return current;
+};
+
+
+ivar.ready = function(fn) {
+	ivar._private.on_ready_fn_stack.push(fn);
+};
+
+/************ BORROWED CODE - START *************/
+
+//Thanks to perfectionkills.com <http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/>
+ivar.getClass = function(val) {
+	return Object.prototype.toString.call(val)
+		.match(/^\[object\s(.*)\]$/)[1];
+};
+
+/**
+ *	Parses string value into correct javascript data type
+ *	@copyleft 2011 by Mozilla Developer Network
+ *
+ *	@param 	{string}	sValue
+ *	@return {null|boolean|number|date}
+ */
+ivar.parseText = function(sValue) {
+	var rIsNull = /^\s*$/, rIsBool = /^(?:true|false)$/i;
+	if (rIsNull.test(sValue)) { return null; }
+	if (rIsBool.test(sValue)) { return sValue.toLowerCase() === "true"; }
+	if (isFinite(sValue)) { return parseFloat(sValue); }
+	if (isFinite(Date.parse(sValue))) { return new Date(sValue); }
+	return sValue;
+};
+
 /*   
 =============================================================================== 
 Crc32 is a JavaScript function for computing the CRC32 of a string 
@@ -912,23 +932,7 @@ ivar.crc32 = function( /* String */ str, /* Number */ crc ) {
     return crc ^ (-1); 
 };
 
-ivar.namespace = function(str, root) {
-	var chunks = str.split('.');
-	if (!ivar.isSet(root))
-		root = ivar._global;
-	var current = root;
-	chunks.each(function(i, elem){
-		if (!current.hasOwnProperty(elem))
-			current[elem] = {};
-		current = current[elem];
-	});
-	return current;
-};
-
-
-ivar.ready = function(fn) {
-	ivar._private.on_ready_fn_stack.push(fn);
-};
+/************ BORROWED CODE - END *************/
 
 ivar._private.libpath = ivar.findScriptPath('main.js');
 ivar.referenceInNamespace(ivar);
