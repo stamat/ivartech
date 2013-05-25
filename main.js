@@ -31,7 +31,7 @@ ivar.regex = {};
 ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
 ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
 ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
-
+ivar.regex.time = /(([0-1][0-9])|(2[0-3])):([0-5][0-9]):([0-5][0-9])/;
 
 Math.randomArbitrary = function(min, max) {
   return Math.random() * (max - min) + min;
@@ -132,19 +132,20 @@ Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {
 		var value = this[i];
-		if (ivar.isSet(field))
-			value = this[i][field]
-		if (ivar.isFunction(value))
-			value = value.parseName();
-		if (ivar.isDate(value))
-			value = value.getTime();
+		if (ivar.isSet(field)) value = this[i][field];
+		
 		if (ivar.isNumber(value))
 			value = value.toString();
-		if (ivar.isObject(value))
+		else if (ivar.isFunction(value))
+			value = 'fn_'+value.parseName();
+		else if (ivar.isDate(value))
+			value = 'date_'+value.getTime();
+		else if (ivar.isObject(value))
 			value = 'obj_'+ivar.crc32(JSON.stringify(value));
+		else if (ivar.isArray(value))
+			value = 'arr_'+value.toString();
 			
-		if (ivar.isString(value))
-			mapped[value] = i;
+		!mapped.hasOwnProperty(value) ? mapped[value] = [i] : mapped[value].push(i);
 	}
 	return mapped;
 };
