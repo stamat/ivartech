@@ -136,6 +136,8 @@ Array.prototype.shuffle = function() {
 ivar.toMapKey = function(value) {
 	if (ivar.isNumber(value))
 		value = value.toString();
+	else if (ivar.isBool(value))
+		value = 'bool_'+value;
 	else if (ivar.isFunction(value))
 		value = 'fn_'+value.parseName();
 	else if (ivar.isDate(value))
@@ -411,7 +413,7 @@ ivar.def = function(functions, parent) {
 		var args = [];
 		ivar.eachArg(arguments, function(i, elem) {
 			args.push(elem);
-			types.push(whatis(elem));
+			types.push(ivar.whatis(elem));
 		});
 		var key = types.join();
 		if (fn.hasOwnProperty(key)) {
@@ -687,7 +689,7 @@ ivar.systemMessage = function(fn, msg) {
 ivar.is = function(obj, type) {
 	if (type === 'number')
 		return isNumber(obj);
-	if (whatis(obj) === type)
+	if (ivar.whatis(obj) === type)
 		return true;
 	if (type === 'empty')
 		return ivar.isEmpty(obj);
@@ -720,10 +722,6 @@ ivar.isString = function(val) {
 
 ivar.isObject = function(val) {
 	return ivar.is(val, 'object');
-};
-
-ivar.isCustomObject = function(val) {
-	return ivar.getClass() === 'object';
 };
 
 ivar.isFunction = function(val) {
