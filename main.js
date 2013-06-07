@@ -24,14 +24,14 @@ ivar._private.libname = 'ivar';
 
 ivar._global = this;
 
-ivar._private.output; //define debug output function, print your output somewhere else...
+ivar._private.output = undefined; //define debug output function, print your output somewhere else...
 
 ivar.regex = {};
-ivar.regex.regex = /^\/(.*)\/([igmy]{0,4})$/;
+ivar.regex.regex = /^\/(.*)\/(?:[igm]{0,3})$/;
 ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
 
 //FUCK THIS SHIT!
-ivar.regex.uri = /^(?:([a-z\-\+\.]+):)?(?:\/\/)?(?:([^?#@:]*)(?::([^?#@:]*))?@)?([a-z0-9\-\.]*)(?::([0-9]{1,5}))?((?:\/?[^?#\s\/]*)*)(?:\?([^#\s"]*))?(?:#([^\s"]*))?$/;
+ivar.regex.uri = /^(?:([a-z\-\+\.]+):)?(?:\/\/)?(?:([^?#@:]*)(?::([^?#@:]*))?@)?([^?#\s\/]*)(?::([0-9]{1,5}))?((?:\/?[^?#\s\/]*)*)(?:\?([^#\s"]*))?(?:#([^\s"]*))?$/;
 ivar.regex.time = /^(([0-1][0-9])|(2[0-3])):([0-5][0-9]):([0-5][0-9])$/;
 
 ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
@@ -99,7 +99,7 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
-//TODO: test == ===, Conditions for Date and Object, recursion for array value
+//TODO: test == ===, Conditions for Object, recursion for array value
 Array.prototype.equal = function(arr) {
 	var self = this;
 	if (self === arr)
@@ -113,12 +113,55 @@ Array.prototype.equal = function(arr) {
 	return true;
 };
 
-//TODO: remove segment of an array
 Array.prototype.remove = function(id) {
-	return this.splice(id, 1);
+	if (ivar.isNumber(id))
+		return this.splice(id, 1);
+	if (ivar.isString(id)) {
+		if (!ivar.regex.regex.test(id)) {
+			var id = this.find(id);
+			if (id > -1)
+				return this.splice(id, 1);
+		} else {
+			return ivar.patternRemove(this, id);
+		}
+	}
+	return false;
 };
 
-//TODO: insert array into array
+ivar.patternRemove = function(obj, re) {
+	if (ivar.isString(re))
+		re = re.toRegExp();
+	if (ivar.isArray(obj)) {
+		for(var i = 0; i < obj.length; i++) {
+			if(re.test(obj[i]))
+				obj.remove(i);
+		}
+	} else if (typeof obj === 'object') {
+		for(var i in obj) {
+			if(re.test(i)) {
+				delete obj[i];
+			}
+		}
+	}
+	return obj;
+};
+
+ivar.getAdditionalProperties = function(obj, properties, patternProperties) {
+	var arr = ivar.getProperties(value);
+	
+	if(properties && ivar.isArray(properties))
+	for(var i = 0; i < properties.length; i++) {
+		arr.remove(properties[i]);
+	}
+	
+	if(properties && ivar.isArray(patternProperties))
+	for(var i = 0; i < patternProperties.length; i++) {
+		arr.remove(patternProperties[i]);
+	}
+	
+	return arr;
+};
+
 Array.prototype.insert = function(id, value) {
 	return this.splice(id, 0, value);
 };
@@ -131,6 +174,14 @@ Array.prototype.shuffle = function() {
 		this.splice(id, 1);
 	}
     return res;
+};
+
+Array.prototype.toObject = function() {
+	var res = {};
+	for(var i = 0; i < this.length; i++) {
+		res[i] = this[i];
+	}
+	return res;
 };
 
 ivar.toMapKey = function(value) {
@@ -342,6 +393,25 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
+ivar.request = function(opt, callback) {
+	var defs = {
+		method: 'GET',
+		async: true
+	};
+	
+	if(ivar.isSet(opt))
+		ivar.extend(defs, opt);
+	
+    var request = new XMLHttpRequest(); 
+    request.onload = function(e) {
+    	var resp = request.responseText;
+		if (request.status != 200) resp = undefined;		
+		if(callback) callback(resp);
+	}
+    request.open(defs.method, defs.uri, defs.async);
+    request.send(defs.messages);
+};
+
 ivar.eachArg = function(args, fn) {
 	var i = 0;
 	while (args.hasOwnProperty(i)) {
@@ -352,17 +422,33 @@ ivar.eachArg = function(args, fn) {
 	return i-1;
 };
 
-ivar.getProperty = function(obj, re) {
-	if (ivar.whatis(re) === 'regexp') {
+ivar.getProperties = function(obj, re) {
+	if (!re && !ivar.isString(re)) {
 		var props = [];
 		for(var i in obj) {
-			if(re.test(i))
-				props.push(i);
+			props.push(i);
 		}
 		return props;
 	} else {
-		return obj[re];
+		if(ivar.whatis(re) !== 'regexp')
+			re = re.toRegExp();
+		var props = [];
+		for(var i in obj) {
+			if(re.test(i)) {
+				props.push(i);
+			}
+		}
+		return props;
 	}
+};
+
+ivar.countProperties = function(obj, fn) {
+	var count = 0;
+	for(var i in obj) {
+		count++;
+		if(fn) fn(count, i);
+	}
+	return count;
 };
 
 ivar._private.def_buildFnList = function(str) {
@@ -705,7 +791,12 @@ ivar.isArray = function(val) {
 ivar.isNumber = function(val) {
 	if (isNaN(val))
 		return false;
-	return typeof val === 'number';
+		
+	var type = typeof val;
+	if (type === 'object')
+		type = ivar.getClass(val).toLowerCase();
+		
+	return type === 'number';
 };
 
 ivar.isInt = function(val) {
@@ -853,12 +944,12 @@ ivar.loop = function(times, fn, step) {
 	}
 };
 
-ivar.find = function(obj, val) {
+ivar.findValue = function(obj, val) {
 	for (var i in obj) {
-		if (obj[i] == val)
+		if (obj[i] === val)
 			return i;
 	}
-	return null;
+	return;
 };
 
 ivar.uid = function(saltSize) {
