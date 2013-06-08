@@ -27,7 +27,7 @@ ivar._global = this;
 ivar._private.output = undefined; //define debug output function, print your output somewhere else...
 
 ivar.regex = {};
-ivar.regex.regex = /^\/(.*)\/(?:[igm]{0,3})$/;
+ivar.regex.regex = /^\/(.*)\/(?:(?:i?g?m?)|(?:i?m?g?)|(?:g?i?m?)|(?:g?m?i?)|(?:m?g?i?)|(?:m?i?g?))$/;
 ivar.regex.email = /^[a-z0-9\._\-]+@[a-z\.\-]+\.[a-z]{2,4}$/;
 
 //FUCK THIS SHIT!
@@ -125,6 +125,8 @@ Array.prototype.remove = function(id) {
 			return ivar.patternRemove(this, id);
 		}
 	}
+	if(ivar.isRegExp(id))
+		return ivar.patternRemove(this, id);
 	return false;
 };
 
