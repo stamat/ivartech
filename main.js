@@ -64,15 +64,41 @@ Number.prototype.roundFloat = function(decimals) {
 */
 
 Array.prototype.find = function(value, field) {
+	var regex = ivar.isRegExp(value);
+	
 	if (this.length > 0)
 		for (var i = 0; i < this.length; i++) {
 			var elem = this[i];
-			if ((field !== undefined) && ((typeof elem === 'object') || (elem.hasOwnProperty('slice') && elem.hasOwnProperty('length'))))
+			if (field && (typeof elem === 'object' || ivar.isArray(elem)))
 				elem = this[i][field];
-			if (elem === value)
-				return i;
+			if (regex) {
+				if(value.test(elem))
+					return i;
+			} else {
+				if (elem === value)
+					return i;
+			}
 		}
 	return -1;
+};
+
+Array.prototype.findAll = function(value, field) {
+	var regex = ivar.isRegExp(value);
+	var result = [];
+	if (this.length > 0)
+		for (var i = 0; i < this.length; i++) {
+			var elem = this[i];
+			if (field && (typeof elem === 'object' || ivar.isArray(elem)))
+				elem = this[i][field];
+			if (regex) {
+				if(value.test(elem))
+					result.push(i);
+			} else {
+				if (elem === value)
+					result.push(i);
+			}
+		}
+	return result;
 };
 
 Array.prototype.getFirst = function() {
@@ -113,20 +139,20 @@ Array.prototype.equal = function(arr) {
 	return true;
 };
 
-Array.prototype.remove = function(id) {
-	if (ivar.isNumber(id))
-		return this.splice(id, 1);
-	if (ivar.isString(id)) {
-		if (!ivar.regex.regex.test(id)) {
-			var id = this.find(id);
-			if (id > -1)
-				return this.splice(id, 1);
-		} else {
-			return ivar.patternRemove(this, id);
-		}
-	}
-	if(ivar.isRegExp(id))
-		return ivar.patternRemove(this, id);
+Array.prototype.rm = function(id) {
+	return this.splice(id, 1);
+};
+
+Array.prototype.remove = function(value) {
+	if (ivar.isString(value) && ivar.regex.regex.test(value))
+		return ivar.patternRemove(this, value);
+
+	if(ivar.isRegExp(value))
+		return ivar.patternRemove(this, value);
+		
+	var id = this.find(value);
+	if (id > -1)
+		return this.rm(id);
 	return false;
 };
 
@@ -136,7 +162,7 @@ ivar.patternRemove = function(obj, re) {
 	if (ivar.isArray(obj)) {
 		for(var i = 0; i < obj.length; i++) {
 			if(re.test(obj[i]))
-				obj.remove(i);
+				obj.rm(i);
 		}
 	} else if (typeof obj === 'object') {
 		for(var i in obj) {
@@ -355,9 +381,11 @@ String.prototype.swap = function(what, with_this, only_first) {
 
 String.prototype.toRegExp = function() {
 	var val = this;
+	var pts = [];
 	if(!ivar.regex.regex.test(val))
-		val = '/'+val+'/';
-	var pts = ivar.regex.regex.exec(val);
+		pts[1] = val;
+	else
+		pts = ivar.regex.regex.exec(val);
 	try {
 		return new RegExp(pts[1], pts[2]);
 	} catch (e) {
