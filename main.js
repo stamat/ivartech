@@ -10,19 +10,46 @@
 if (ivar === undefined) var ivar = {};
 if ($i === undefined) var $i = ivar;
 
+ivar._global = this;
+
+ivar.getProperyByNamespace = function(str, root, del) {
+	if(!del) del = '.';
+	var parts = str.split(del);
+	var current = !root ? ivar._global : root;
+	for (var i = 0; i < parts.length; i++) {
+		if (current.hasOwnProperty(parts[i])) {
+			current = current[parts[i]];
+		} else {
+			return undefined;
+		}
+	}
+	return current;
+};
+
+ivar.namespace = function(str, root, del) {
+	if(!del) del = '.';
+	var parts = str.split(del);
+	var current = !root ? ivar._global : root;
+	for(var i = 0; i < parts.length; i++) {
+		if (!current.hasOwnProperty(parts[i]))
+			current[parts[i]] = {};
+		current = current[parts[i]];
+	};
+	return current;
+};
+
 ivar.DEBUG = true;
 ivar.LOADED = false;
-ivar._private = {};
+ivar.namespace('ivar._private');
 ivar._private.libpath = '';
 ivar._private.imported = {};
 ivar._private.loading = {
 	scripts: {},
 	length: 0
 };
+
 ivar._private.on_ready_fn_stack = [];
 ivar._private.libname = 'ivar';
-
-ivar._global = this;
 
 ivar._private.output = undefined; //define debug output function, print your output somewhere else...
 
@@ -144,10 +171,7 @@ Array.prototype.rm = function(id) {
 };
 
 Array.prototype.remove = function(value) {
-	if (ivar.isString(value) && ivar.regex.regex.test(value))
-		return ivar.patternRemove(this, value);
-
-	if(ivar.isRegExp(value))
+	if ((ivar.isString(value) && ivar.regex.regex.test(value)) || ivar.isRegExp(value))
 		return ivar.patternRemove(this, value);
 		
 	var id = this.find(value);
@@ -393,6 +417,40 @@ String.prototype.toRegExp = function() {
 	}
 };
 
+String.prototype.parseJSON = function() {
+	if(/^\s*\{.*\}\s*$/.test(this)) {
+		try {
+			return JSON.parse(this);	
+		} catch(e) {
+			return;
+		}
+	}
+	return;
+};
+
+ivar.getFunction = function(str) {
+	var fn = ivar.getProperyByNamespace(str);
+	return ivar.isFunction(fn)? fn : undefined;
+};
+
+ivar.getFunctions = function(str, delimiter) {
+	if(delimiter === undefined)
+		delimiter = ' ';
+	var fns = str.split(delimiter);
+	var res = [];
+	for(var i = 0; i < fns.length; i++) {
+		var fn = ivar.getFunction(fns[i]);
+		if(fn)
+			res.push(current);
+	}
+	
+	return res;
+};
+
+String.prototype.func = function() {
+	ivar.getFunction(this)(arguments);
+};
+
 Function.prototype.parseName = function() {
 	return ivar.regex.function_name.exec(this.toString())[1];
 };
@@ -541,123 +599,6 @@ ivar.def = function(functions, parent) {
 				return fn['default'].apply(parent, args);		
 		}
 	};
-};
-
-ivar.findScriptPath = function(script_name) {
-	var script_elems = document.getElementsByTagName('script');
-	for (var i = 0; i < script_elems.length; i++) {
-		if (script_elems[i].src.endsWith(script_name)) {
-			var href = window.location.href;
-			href = href.substring(0, href.lastIndexOf('/'));
-			var url = script_elems[i].src.removeSufix(script_name);
-			return url.substring(href.length+1, url.length);
-		}
-	}
-	return '';
-};
-
-ivar._private.onReady = function() {
-	if (!ivar.LOADED) {
-		ivar._private.on_ready_fn_stack.each(function(i, obj) {
-			ivar._private.on_ready_fn_stack[i]();
-		});
-		ivar.LOADED = true;
-	}
-};
-
-ivar.injectScript = function(script_name, uri, callback, prepare, async) {
-	
-	if (ivar.isSet(prepare))
-		prepare(script_name, uri);
-	
-	var script_elem = document.createElement('script');
-	script_elem.type = 'text/javascript';
-	script_elem.title = script_name;
-	script_elem.src = uri;
-	if(!ivar.isSet(async))
-		async = false;
-	script_elem.async = async;
-	script_elem.defer = false;
-	
-	if (ivar.isSet(callback))
-		script_elem.onload = function() {
-				callback(script_name, uri);
-		};
-	
-	document.getElementsByTagName('head')[0].appendChild(script_elem);
-};
-
-ivar.isGlobal = function(var_name, root) {
-	if (!ivar.isSet(root))
-		root = ivar._global;
-	return root.hasOwnProperty(var_name); 
-};
-
-ivar.isPrivate = function(var_name) {
-	return var_name.startsWith('_'); 
-};
-
-ivar.isConstant = function(var_name) {
-	return !var_name.hasLowerCase();
-};
-
-ivar.referenceInNamespace = function(object, target) {
-	if(!ivar.isSet(target))
-		target = ivar._global;
-	for(var i in object) {
-		if (!ivar.isGlobal(i, target) && !ivar.isPrivate(i) && !ivar.isConstant(i))
-			ivar._global[i] = ivar[i];
-	}
-};
-
-ivar._private.requireCallback = function(script_name, uri) {
-	ivar._private.loading.length--;
-	delete ivar._private.loading.scripts[script_name];
-	ivar._private.imported[script_name] = uri;
-	ivar.referenceInNamespace(ivar);
-	if (ivar._private.loading.length == 0)
-		ivar._private.onReady();
-};
-
-ivar._private.requirePrepare = function(script_name, uri) {
-	ivar._private.loading.scripts[script_name] = uri;
-	ivar._private.loading.length++;
-};
-
-ivar.namespaceToUri = function(script_name, url) {
-	var np = script_name.split('.');
-	if (np.getLast() === '*') {
-		np.pop();
-		np.push('_all');
-	} else if (np.getLast() === 'js') {
-		np.pop();
-	}
-	
-	if (!ivar.isSet(url))
-		url = '';
-		
-	script_name = np.join('.');
-	return  url + np.join('/')+'.js';
-};
-
-//TODO: test it;
-ivar.require = function(script_name, async) {
-	var uri = '';
-	if (script_name.indexOf('/') > -1) {
-		uri = script_name;
-		var lastSlash = uri.lastIndexOf('/');
-		script_name = uri.substring(lastSlash+1, uri.length);
-	} else {
-		
-		uri = ivar.namespaceToUri(script_name, ivar._private.libpath);
-	}
-	
-	if (!ivar._private.loading.scripts.hasOwnProperty(script_name) 
-	 && !ivar._private.imported.hasOwnProperty(script_name)) {
-		ivar.injectScript(script_name, uri, 
-			ivar._private.requireCallback, 
-				ivar._private.requirePrepare, async);
-	}
 };
 
 /**
@@ -1006,19 +947,121 @@ ivar.setUniqueObject = function(obj, collection) {
 	return obj;
 };
 
-ivar.namespace = function(str, root) {
-	var chunks = str.split('.');
-	if (!ivar.isSet(root))
-		root = ivar._global;
-	var current = root;
-	chunks.each(function(i, elem){
-		if (!current.hasOwnProperty(elem))
-			current[elem] = {};
-		current = current[elem];
-	});
-	return current;
+ivar.findScriptPath = function(script_name) {
+	var script_elems = document.getElementsByTagName('script');
+	for (var i = 0; i < script_elems.length; i++) {
+		if (script_elems[i].src.endsWith(script_name)) {
+			var href = window.location.href;
+			href = href.substring(0, href.lastIndexOf('/'));
+			var url = script_elems[i].src.removeSufix(script_name);
+			return url.substring(href.length+1, url.length);
+		}
+	}
+	return '';
 };
 
+ivar._private.onReady = function() {
+	if (!ivar.LOADED) {
+		ivar._private.on_ready_fn_stack.each(function(i, obj) {
+			ivar._private.on_ready_fn_stack[i]();
+		});
+		ivar.LOADED = true;
+	}
+};
+
+ivar.isGlobal = function(var_name, root) {
+	if (!ivar.isSet(root))
+		root = ivar._global;
+	return root.hasOwnProperty(var_name); 
+};
+
+ivar.isPrivate = function(var_name) {
+	return var_name.startsWith('_'); 
+};
+
+ivar.isConstant = function(var_name) {
+	return !var_name.hasLowerCase();
+};
+
+ivar.referenceInNamespace = function(object, target) {
+	if(!ivar.isSet(target))
+		target = ivar._global;
+	for(var i in object) {
+		if (!ivar.isGlobal(i, target) && !ivar.isPrivate(i) && !ivar.isConstant(i))
+			ivar._global[i] = ivar[i];
+	}
+};
+
+ivar.namespaceToUri = function(script_name, url) {
+	var np = script_name.split('.');
+	if (np.getLast() === '*') {
+		np.pop();
+		np.push('_all');
+	} else if (np.getLast() === 'js') {
+		np.pop();
+	}
+	
+	if (!ivar.isSet(url))
+		url = '';
+		
+	script_name = np.join('.');
+	return  url + np.join('/')+'.js';
+};
+
+ivar.injectScript = function(script_name, uri, callback, prepare, async) {
+	if (ivar.isSet(prepare))
+		prepare(script_name, uri);
+	
+	var script_elem = document.createElement('script');
+	script_elem.type = 'text/javascript';
+	script_elem.title = script_name;
+	script_elem.src = uri;
+	if(!ivar.isSet(async))
+		async = false;
+	script_elem.async = async;
+	script_elem.defer = false;
+	if (ivar.isSet(callback)) {
+		script_elem.onload = function(e) {
+			callback(script_name, uri);
+		};
+	}
+	
+	document.getElementsByTagName('head')[0].appendChild(script_elem);
+};
+
+ivar._private.requireCallback = function(script_name, uri) {
+	ivar._private.loading.length--;
+	delete ivar._private.loading.scripts[script_name];
+	ivar._private.imported[script_name] = uri;
+	//ivar.referenceInNamespace(ivar);
+	if (ivar._private.loading.length == 0)
+		ivar._private.onReady();
+};
+
+ivar._private.requirePrepare = function(script_name, uri) {
+	ivar._private.loading.scripts[script_name] = uri;
+	ivar._private.loading.length++;
+};
+
+//TODO: test it
+ivar.require = function(script_name, async) {
+	var uri = '';
+	if (script_name.indexOf('/') > -1) {
+		uri = script_name;
+		var lastSlash = uri.lastIndexOf('/');
+		script_name = uri.substring(lastSlash+1, uri.length);
+	} else {
+		
+		uri = ivar.namespaceToUri(script_name, ivar._private.libpath);
+	}
+	
+	if (!ivar._private.loading.scripts.hasOwnProperty(script_name) 
+	 && !ivar._private.imported.hasOwnProperty(script_name)) {
+		ivar.injectScript(script_name, uri, 
+			ivar._private.requireCallback, 
+				ivar._private.requirePrepare, async);
+	}
+};
 
 ivar.ready = function(fn) {
 	ivar._private.on_ready_fn_stack.push(fn);
