@@ -52,7 +52,7 @@ ivar.net.Communication = function Communication(options, history) {
 		content_type: 'application/json'
 	};
 	this.history = false;
-	if(isSet(history))
+	if(ivar.isSet(history))
 		this.history = history;
 		
 	this.applyOptions(options);
@@ -160,10 +160,10 @@ ivar.net.Communication.prototype.send = function(options) {
 		return this.failed(obj, 'URL or Request object, or request method is not set! Check your request object!', false);
 	}
 	
-	if (!isSet(obj.request.id))
+	if (!ivar.isSet(obj.request.id))
 		obj.request.id = ivar.uid();
 	
-	if (!isSet(obj.request.params))
+	if (!ivar.isSet(obj.request.params))
 		obj.request.params = {};
 
 	var request = new XMLHttpRequest();
@@ -186,7 +186,7 @@ ivar.net.Communication.prototype.send = function(options) {
 	};
 	try {
 		var json;
-		if(isSet(obj.request))
+		if(ivar.isSet(obj.request))
 			json = JSON.stringify(obj.request);
 		request.send(json);
 	} catch(e) {
@@ -194,7 +194,7 @@ ivar.net.Communication.prototype.send = function(options) {
 	}
 	
 	this.sent.put(obj.request.id, obj);
-	ivar.print('[request]: '+ obj.request.method, obj);
+	ivar.echo('[request]: '+ obj.request.method, obj);
 	this.fire(obj.request.method+'-send', obj);
 	this.fire('send', obj);
 	return true;
@@ -217,7 +217,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
 	
 	if (status.type === 2) {
 		if (status.code !== 200)
-			ivar.warning(sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
+			ivar.warn(sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
 		var resp = obj.response_text;
 		var jsonBegin = resp.indexOf('{');
 		var serverWarning;
@@ -229,7 +229,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
 		}
 
 		if (ivar.isSet(serverWarning) && (serverWarning !== ''))
-			ivar.warning('[server-warning]: '+sentObj.request.method, serverWarning);
+			ivar.warn('[server-warning]: '+sentObj.request.method, serverWarning);
 		
 		//TODO: Parse response_text to JSON depending on response_type
 		var json;
@@ -242,10 +242,10 @@ ivar.net.Communication.prototype.receive = function(obj) {
  		if (ivar.isSet(json)) {
  			try {
  				//TODO: Check formats for other browsers print(obj.date);
- 				if(isSet(obj.date))
+ 				if(ivar.isSet(obj.date))
 					json['date'] = new Date(obj.date);
 			} catch (e) {
-	 			error(e);
+	 			ivar.error(e);
 	 		}
 	 		
 			this.fire(sentObj.request.method+'-receive', sentObj, json);
@@ -254,7 +254,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
 			if(this.unsuccessful.hasKey(json.id))
 				this.unsuccessful.remove(json.id);
 				
-			if (isSet(sentObj.callback))
+			if (ivar.isSet(sentObj.callback))
 				sentObj.callback(json);
 			
 			if (this.history) {
@@ -263,7 +263,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
 				this.sent.remove(json.id);
 			}
 			
-			ivar.print('[response]: '+ sentObj.request.method, json);
+			ivar.echo('[response]: '+ sentObj.request.method, json);
 		}
 	} else {
 		this.failed(sentObj, sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
