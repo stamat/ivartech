@@ -152,18 +152,27 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
-//TODO: test == ===, Conditions for Object, recursion for array value
-Array.prototype.equal = function(arr) {
-	var self = this;
-	if (self === arr)
+ivar.compareArrays = function(a, b) {
+	if (a === b)
 		return true;
-	if (self.length !== arr.length)
+	if (a.length !== b.length)
 		return false;
-	self.each(function(i){
-		if (self[i] !== arr[i])
-			return false;
-	});
+	for(var i = 0; i < a.length; i++){
+		if (a[i] !== b[i]) {
+			if(ivar.is(a[i], 'array')) {
+				if(!ivar.compareArrays(a[i],b[i])) return false;
+			} else if(ivar.is(a[i], 'object')) {
+				if(!ivar.compareObjects(a[i], b[i])) return false;
+			} else {
+				return false;
+			}
+		}
+	};
 	return true;
+};
+
+Array.prototype.equal = function(arr) {
+	return ivar.compareArrays(this, arr);
 };
 
 Array.prototype.rm = function(id) {
@@ -555,6 +564,27 @@ ivar.countProperties = function(obj, fn) {
 	return count;
 };
 
+ivar.sortProperties = function(o, fn) {
+	var props = [];
+	var res = {};
+	for(var i in o) {
+		props.push(i);
+	}
+	props = props.sort(fn);
+	
+	for(var i = 0; i < props.length; i++) {
+		if(ivar.is(o[props[i]], 'object'))
+			o[props[i]] = ivar.sortProperties(o[props[i]]);
+		res[props[i]] = o[props[i]];
+	}
+	
+	return res;
+};
+
+ivar.crcObjectCompare = function(a, b) {
+	return ivar.crc32(JSON.stringify(ivar.sortProperties(a))) === ivar.crc32(JSON.stringify(ivar.sortProperties(b)));
+};
+
 ivar._private.def_buildFnList = function(str) {
 	var args = str.split(',');
 	var argSets = [];
@@ -853,29 +883,50 @@ ivar.whatis = function(val) {
 };
 
 
-//TODO: WARNING! NOT RECURSIVE!
 /**
  *	Compares two objects
  *	
  *	@todo Should be tested more. Should be recursive for children objects. Two 'for' loops, very slow... Dont know if it can be faster... -.-
  *
- *	@param	{object}	obj1	Any object with properties
- *	@param	{object}	obj2	Any object with properties
+ *	@param	{object}	a		Any object with properties
+ *	@param	{object}	b		Any object with properties
  *	@return	{boolean}			True if equal
  */
-//TODO: recursive check for child objects
-ivar.equal = function(obj1, obj2) {
-	if (obj1 === obj2)
+ivar.compareObjects = function(a, b) {
+	if (a === b)
 		return true;
-	for (var i in obj1) {
-		if (obj1[i] !== obj2[i])
+	for(var i in a) {
+		if(b.hasOwnProperty(i)) {
+			if(a[i] !== b[i]) {
+				if(ivar.is(a[i], 'array')) {
+					if(!ivar.compareArrays(a[i], b[i])) return false;
+				} else if(ivar.is(a[i], 'object')) {
+					if(!ivar.compareObjects(a[i], b[i])) return false;
+				} else {
+					return false;
+				}
+			}
+		} else {
 			return false;
+		}
 	}
-	for (var i in obj2) {
-		if (obj2[i] !== obj1[i])
+	
+	for(var i in b) {
+		if(!a.hasOwnProperty(i)) {
 			return false;
+		}
 	}
 	return true;
+};
+
+ivar.equal = function(a, b) {
+	if(ivar.is(a, 'array'))
+		return ivar.compareArrays(a, b);
+		
+	if(ivar.is(a, 'object'))
+		return ivar.compareObjects(a, b);
+	
+	return a === b;
 };
 
 //TODO: WARNING! NOT RECURSIVE!
