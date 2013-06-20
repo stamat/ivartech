@@ -7,6 +7,11 @@
  *	@namespace	ivar.net
  */
 
+//TODO: METHOD EXECUTION PROPERTIES (like: only once(the result is always same), one by one (stack methods, if the response isnt received, dont execute the others), abort)
+//TODO: METHOD WAITTING STACK
+//TODO: Should requests be uniquely signed by request object they contain with CRC32
+//TODO: If prevous, then there should be a mechanism that stores the data of requests if the result expected is the same
+
 //TODO: Finis file upload, purge jquery form the script
 
 ivar.require('ivar.data.Map');
@@ -44,8 +49,10 @@ ivar.namespace('ivar.net');
 ivar.net.Communication = function Communication(options, history) {
 	this.registered = new ivar.data.Map();
 	this.sent = new ivar.data.Map();
+	this.pending = new ivar.data.Map();
 	this.unsuccessful = new ivar.data.Map();
 	this.received = new ivar.data.Map();
+	this.abort = false;
 	this.defaults = {
 		async: true,
 		method: 'GET',
@@ -99,7 +106,7 @@ ivar.net.Communication.prototype.applyOptions = function(options) {
  *	@param 	{string|number}	[obj.request.id] 		Request UID string if not supplied it is automatically generated
  *	@param 	{string}		obj.request.method 		Name of the method to be invoked on server 
  *	@param 	{object}		obj.request.params		Request data to be submitted to method on server as its parameters
- *	@param 	{string}		obj.url					URL of server side interface
+ *	@param 	{string}		obj.uri					URI of server side interface
  *	@param	{boolean}		[obj.async=true]		Should a request be asynchronous or not
  *	@param	{string}		[obj.method='GET']		HTTP method GET, POST, PUT, DELETE
  *	@param	{string}		[obj.content_type='application/json']	Content MIME type json|rest|xml| image|file...
@@ -144,7 +151,7 @@ ivar.net.Communication.prototype.unregister = function(method_name) {
  *	@param 	{string|number}	[options.request.id] 		Request UID string if not supplied it is automatically generated
  *	@param 	{string}		options.request.method 		Name of the method to be invoked on server 
  *	@param 	{object}		options.request.params		Request data to be submitted to method on server as its parameters
- *	@param 	{string}		options.url					URL of server side interface
+ *	@param 	{string}		options.uri					URI of server side interface
  *	@param	{boolean}		[options.async=true]		Should a request be asynchronous or not
  *	@param	{string}		[options.method='GET']		HTTP method GET, POST, PUT, DELETE
  *	@param	{string}		[options.content_type='application/json']	Content MIME type json|rest|xml| image|file...
@@ -156,8 +163,17 @@ ivar.net.Communication.prototype.unregister = function(method_name) {
 ivar.net.Communication.prototype.send = function(options) {
 	var obj = ivar.extend(this.defaults, options, 0);
 	
-	if (!ivar.isSet(obj.url) || !ivar.isSet(obj.request) || !ivar.isSet(obj.request.method)) {
+	if (!ivar.isSet(obj.uri) || !ivar.isSet(obj.request) || !ivar.isSet(obj.request.method)) {
 		return this.failed(obj, 'URL or Request object, or request method is not set! Check your request object!', false);
+	}
+	
+	if(this.abort) {
+		var pending = this.pending.get(obj.request.method);
+	
+		if(ivar.isSet(pending)) {
+			pending.abort();
+			this.pending.remove(obj.request.method);
+		}
 	}
 	
 	if (!ivar.isSet(obj.request.id))
@@ -165,17 +181,29 @@ ivar.net.Communication.prototype.send = function(options) {
 	
 	if (!ivar.isSet(obj.request.params))
 		obj.request.params = {};
-
-	var request = new XMLHttpRequest();
+	
 	try {
-		request.open(obj.method, obj.url, obj.async, obj.user, obj.password);
-	} catch (e) {
+		var json;
+		if(ivar.isSet(obj.request))
+			json = JSON.stringify(obj.request);
+	} catch(e) {
 		return this.failed(obj, e);
 	}
-	request.setRequestHeader('Content-Type', obj.content_type);
+	
+	var opt = {
+		'method': obj.method,
+		'uri': obj.uri,
+		'async': obj.async,
+		'user': obj.user,
+		'password': obj.password,
+		'message': json,
+		'header': {
+			'Content-Type': obj.content_type
+		}
+	}
 	
 	var self = this;
-	request.onload = function() {
+	function onreceive(request, e) {
 		self.receive({
 			status: request.status,
 			date: request.getResponseHeader('Date'),
@@ -184,15 +212,13 @@ ivar.net.Communication.prototype.send = function(options) {
 			id: obj.request.id
 		});
 	};
-	try {
-		var json;
-		if(ivar.isSet(obj.request))
-			json = JSON.stringify(obj.request);
-		request.send(json);
-	} catch(e) {
-		return this.failed(obj, e);
-	}
 	
+	var request = ivar.request(opt, onreceive);
+	
+	if(!ivar.isSet(request))
+		return this.failed(obj, e);
+	
+	if(this.abort) this.pending.put(obj.request.method, request);
 	this.sent.put(obj.request.id, obj);
 	ivar.echo('[request]: '+ obj.request.method, obj);
 	this.fire(obj.request.method+'-send', obj);
@@ -241,7 +267,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
  		
  		if (ivar.isSet(json)) {
  			try {
- 				//TODO: Check formats for other browsers print(obj.date);
+ 				//TODO: Check formats for other browsers ivar.echo(obj.date);
  				if(ivar.isSet(obj.date))
 					json['date'] = new Date(obj.date);
 			} catch (e) {
