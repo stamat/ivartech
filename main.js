@@ -492,12 +492,28 @@ ivar.request = function(opt, callback) {
 	
     var request = new XMLHttpRequest(); 
     request.onload = function(e) {
-    	var resp = request.responseText;
-		if (request.status != 200) resp = undefined;		
-		if(callback) callback(resp);
+		if(callback) callback(request, e);
 	}
-    request.open(defs.method, defs.uri, defs.async);
-    request.send(defs.messages);
+	
+	try {
+    	request.open(defs.method, defs.uri, defs.async, defs.user, defs.password);
+    } catch(e) {
+    	return;
+    }
+	
+	if(ivar.isSet(defs.header)) {
+		for(var i in defs.header) {
+			request.setRequestHeader(i, defs.header[i]);
+		}
+	}
+    
+    try {
+    	request.send(defs.message);
+    } catch(e) {
+    	return;
+    }
+    
+    return request;
 };
 
 ivar.eachArg = function(args, fn) {
@@ -837,6 +853,7 @@ ivar.whatis = function(val) {
 };
 
 
+//TODO: WARNING! NOT RECURSIVE!
 /**
  *	Compares two objects
  *	
@@ -861,6 +878,7 @@ ivar.equal = function(obj1, obj2) {
 	return true;
 };
 
+//TODO: WARNING! NOT RECURSIVE!
 /**
  *	Extends properties of a second object into first, overwriting all of it's properties if 
  *	they have same properties. Used for loading options.
