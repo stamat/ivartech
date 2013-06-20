@@ -6,11 +6,19 @@
  *	
  *	@namespace	ivar.net
  */
+ 
+//TODO: PROBLEM!!! Response order!
+/*
+	Let's say we have two same procedure calls on server, first one takes a bit longer to complete, but the second one takes shorter time to load. First response is the one of the second call, and last is the one of the first call. So the last response becomes relevant, but it is not the information up to date.
+	
+	The solutions to this is to stack calls and wait for responses in order. This has to be modeled carefully.
+*/
 
-//TODO: METHOD EXECUTION PROPERTIES (like: only once(the result is always same), one by one (stack methods, if the response isnt received, dont execute the others), abort)
+//TODO: METHOD EXECUTION PROPERTIES (like: only once(the result is always same), one by one (stack methods, if the response isnt received, dont execute the others), abort). com.register(method, property);
+// What about encapsulating, or making pseudonims for methods with different params! :) This can be valuable.
 //TODO: METHOD WAITTING STACK
 //TODO: Should requests be uniquely signed by request object they contain with CRC32
-//TODO: If prevous, then there should be a mechanism that stores the data of requests if the result expected is the same
+// If prevous, then there should be a mechanism that stores the data of requests if the result expected is the same
 
 //TODO: Finis file upload, purge jquery form the script
 
@@ -49,10 +57,10 @@ ivar.namespace('ivar.net');
 ivar.net.Communication = function Communication(options, history) {
 	this.registered = new ivar.data.Map();
 	this.sent = new ivar.data.Map();
-	this.pending = new ivar.data.Map();
+//	this.pending = new ivar.data.Map();
 	this.unsuccessful = new ivar.data.Map();
 	this.received = new ivar.data.Map();
-	this.abort = false;
+//	this.abort = false;
 	this.defaults = {
 		async: true,
 		method: 'GET',
@@ -64,7 +72,6 @@ ivar.net.Communication = function Communication(options, history) {
 		
 	this.applyOptions(options);
 	
-	//this.events = new ivar.patt.Events();
 	new ivar.patt.Events(this);
 };
 
@@ -124,7 +131,7 @@ ivar.net.Communication.prototype.register = function(obj) {
 		this[obj.request.method] = function(params) {
 			var requestObject = this.registered.get(obj.request.method);
 			if (ivar.isSet(params))
-				requestObject.request.params = params;
+				requestObject.request.params = params; //TODO: Or extend
 			this.send(requestObject, obj.request.method);
 		};
 	}
@@ -167,14 +174,14 @@ ivar.net.Communication.prototype.send = function(options) {
 		return this.failed(obj, 'URL or Request object, or request method is not set! Check your request object!', false);
 	}
 	
-	if(this.abort) {
-		var pending = this.pending.get(obj.request.method);
-	
-		if(ivar.isSet(pending)) {
-			pending.abort();
-			this.pending.remove(obj.request.method);
-		}
-	}
+//	if(this.abort) {
+//		var pending = this.pending.get(obj.request.method);
+//	
+//		if(ivar.isSet(pending)) {
+//			pending.abort();
+//			this.pending.remove(obj.request.method);
+//		}
+//	}
 	
 	if (!ivar.isSet(obj.request.id))
 		obj.request.id = ivar.uid();
@@ -218,7 +225,7 @@ ivar.net.Communication.prototype.send = function(options) {
 	if(!ivar.isSet(request))
 		return this.failed(obj, e);
 	
-	if(this.abort) this.pending.put(obj.request.method, request);
+//	if(this.abort) this.pending.put(obj.request.method, request);
 	this.sent.put(obj.request.id, obj);
 	ivar.echo('[request]: '+ obj.request.method, obj);
 	this.fire(obj.request.method+'-send', obj);
