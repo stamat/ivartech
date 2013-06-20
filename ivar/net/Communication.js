@@ -12,6 +12,7 @@
 	Let's say we have two same procedure calls on server, first one takes a bit longer to complete, but the second one takes shorter time to load. First response is the one of the second call, and last is the one of the first call. So the last response becomes relevant, but it is not the information up to date.
 	
 	The solutions to this is to stack calls and wait for responses in order. This has to be modeled carefully.
+	Or to assign a custom callback to each call.
 */
 
 //TODO: METHOD EXECUTION PROPERTIES (like: only once(the result is always same), one by one (stack methods, if the response isnt received, dont execute the others), abort). com.register(method, property);
@@ -128,10 +129,12 @@ ivar.net.Communication.prototype.register = function(obj) {
 			}
 		};
 	if(!this.registered.hasKey(obj.request.method)) {
-		this[obj.request.method] = function(params) {
+		this[obj.request.method] = function(params, callback) {
 			var requestObject = this.registered.get(obj.request.method);
 			if (ivar.isSet(params))
-				requestObject.request.params = params; //TODO: Or extend
+				requestObject.request.params = params;
+			if (ivar.isSet(callback))
+				requestObject.callback = callback;
 			this.send(requestObject, obj.request.method);
 		};
 	}
@@ -245,31 +248,31 @@ ivar.net.Communication.prototype.send = function(options) {
  *	@param 	{string|number}	obj.id 				Identificator of the request object
  */
 ivar.net.Communication.prototype.receive = function(obj) {
-	var sentObj = this.sent.get(obj.id);
+	var requ = this.sent.get(obj.id);
 	var status = ivar.net.httpResponseStatus(obj.status);
 	
 	if (status.type === 2) {
 		if (status.code !== 200)
-			ivar.warn(sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
-		var resp = obj.response_text;
-		var jsonBegin = resp.indexOf('{');
+			ivar.warn(requ.request.method +' - '+requ.method + ' ' + requ.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
+		var response_text = obj.response_text;
+		var jsonBegin = response_text.indexOf('{');
 		var serverWarning;
 		if(jsonBegin > 0) {
-			serverWarning = resp.substring(0, jsonBegin);
-			resp = resp.substring(jsonBegin, resp.lastIndexOf('}') + 1);
+			serverWarning = response_text.substring(0, jsonBegin);
+			response_text = response_text.substring(jsonBegin, response_text.lastIndexOf('}') + 1);
 		} else if (jsonBegin === -1) {
-			ivar.error('[server-error]: '+resp);
+			ivar.error('[server-error]: '+response_text);
 		}
 
 		if (ivar.isSet(serverWarning) && (serverWarning !== ''))
-			ivar.warn('[server-warning]: '+sentObj.request.method, serverWarning);
+			ivar.warn('[server-warning]: '+requ.request.method, serverWarning);
 		
 		//TODO: Parse response_text to JSON depending on response_type
-		var json;
+		var resp;
 		try {
-			json = JSON.parse(resp);
+			resp = JSON.parse(response_text);
 		} catch (e) {
-			this.failed(sentObj, ''+e+' > ' + resp );
+			this.failed(requ, ''+e+' > ' + response_text );
  		}
  		
  		if (ivar.isSet(json)) {
@@ -281,25 +284,24 @@ ivar.net.Communication.prototype.receive = function(obj) {
 	 			ivar.error(e);
 	 		}
 	 		
-			this.fire(sentObj.request.method+'-receive', sentObj, json);
-			this.fire('receive', sentObj, json);
+	 		if (ivar.isSet(requ.callback)) requ.callback(requ, resp);
+	 		
+			this.fire(requ.request.method+'-receive', requ, resp);
+			this.fire('receive', requ, resp);
 			
-			if(this.unsuccessful.hasKey(json.id))
-				this.unsuccessful.remove(json.id);
-				
-			if (ivar.isSet(sentObj.callback))
-				sentObj.callback(json);
+			if(this.unsuccessful.hasKey(resp.id))
+				this.unsuccessful.remove(resp.id);
 			
 			if (this.history) {
-				this.received.put(json.id, json);
+				this.received.put(resp.id, resp);
 			} else {
-				this.sent.remove(json.id);
+				this.sent.remove(resp.id);
 			}
 			
-			ivar.echo('[response]: '+ sentObj.request.method, json);
+			ivar.echo('[response]: '+ requ.request.method, resp);
 		}
 	} else {
-		this.failed(sentObj, sentObj.request.method +' - '+sentObj.method + ' ' + sentObj.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
+		this.failed(requ, requ.request.method +' - '+requ.method + ' ' + requ.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
 	}
 };
 
