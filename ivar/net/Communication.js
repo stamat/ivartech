@@ -141,7 +141,7 @@ ivar.net.Communication.prototype.register = function(obj) {
 	this.registered.put(obj.request.method, ivar.extend(this.defaults, obj, 0));
 };
 
-/**true
+/**
  *	Removes already registered function so it can't be called anymore
  *
  *	@param	{string}	method_name
@@ -275,14 +275,14 @@ ivar.net.Communication.prototype.receive = function(obj) {
 			this.failed(requ, ''+e+' > ' + response_text );
  		}
  		
- 		if (ivar.isSet(json)) {
- 			try {
- 				//TODO: Check formats for other browsers ivar.echo(obj.date);
- 				if(ivar.isSet(obj.date))
-					json['date'] = new Date(obj.date);
-			} catch (e) {
-	 			ivar.error(e);
-	 		}
+ 		if (ivar.isSet(resp)) {
+ 			if(ivar.isSet(obj.date))
+	 			try {
+	 				//TODO: Check formats for other browsers ivar.echo(obj.date);
+						resp['date'] = new Date(obj.date);
+				} catch (e) {
+		 			ivar.error(e);
+		 		}
 	 		
 	 		if (ivar.isSet(requ.callback)) requ.callback(requ, resp);
 	 		
