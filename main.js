@@ -242,26 +242,30 @@ Array.prototype.toObject = function() {
 	return res;
 };
 
-
 //TODO: more elegant
 ivar.toMapKey = function(value) {
-	if (ivar.isNumber(value))
-		value = value.toString();
-	else if (ivar.isBool(value))
-		value = 'bool_'+value;
-	else if (ivar.isFunction(value))
-		value = 'fn_'+value.parseName();
-	else if (ivar.isDate(value))
-		value = 'date_'+value.getTime();
-	else if (ivar.isObject(value))
-		value = 'obj_'+ivar.crc32(JSON.stringify(value));
-	else if (ivar.isArray(value))
-		value = 'arr_'+value.toString();
+	var type = ivar.whatis(value);
 	
-	return value;
+	if (type === 'function') {
+		value = value.parseName()+_+ivar.crc32(value.toString());
+	} else if (type === 'date') {
+		value = value.getTime();
+	} else if (type === 'object') {
+		value = ivar.objectCRC(value);
+	} else if (type === 'array') {
+		value = ivar.arrayCRC(value);
+	}
+	
+	return  type+'_'+value;
 };
 
-//NOTE: Members of the array must be unique!
+ivar.arrayCRC = function(a) {
+	for(var i = 0; i < a.length; i++) {
+		a[i] = ivar.toMapKey(a[i]);
+	}
+	return ivar.crc32(a.toString());
+}
+
 Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {
@@ -580,8 +584,12 @@ ivar.sortProperties = function(o, fn) {
 	return res;
 };
 
+ivar.objectCRC = function(o) {
+	return ivar.crc32(JSON.stringify(ivar.sortProperties(o)));
+}
+
 ivar.crcObjectCompare = function(a, b) {
-	return ivar.crc32(JSON.stringify(ivar.sortProperties(a))) === ivar.crc32(JSON.stringify(ivar.sortProperties(b)));
+	return ivar.objectCRC(a) === ivar.objectCRC(b);
 };
 
 ivar._private.def_buildFnList = function(str) {
