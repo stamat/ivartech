@@ -159,13 +159,9 @@ ivar.compareArrays = function(a, b) {
 		return false;
 	for(var i = 0; i < a.length; i++){
 		if (a[i] !== b[i]) {
-			if(ivar.is(a[i], 'array')) {
-				if(!ivar.compareArrays(a[i],b[i])) return false;
-			} else if(ivar.is(a[i], 'object')) {
-				if(!ivar.compareObjects(a[i], b[i])) return false;
-			} else {
-				return false;
-			}
+			if(ivar._equal.hasOwnProperty(atype))
+				return ivar._equal[atype](a, b);
+			return false;
 		}
 	};
 	return true;
@@ -885,8 +881,6 @@ ivar.whatis = function(val) {
 
 /**
  *	Compares two objects
- *	
- *	@todo Should be tested more. Should be recursive for children objects. Two 'for' loops, very slow... Dont know if it can be faster... -.-
  *
  *	@param	{object}	a		Any object with properties
  *	@param	{object}	b		Any object with properties
@@ -898,13 +892,9 @@ ivar.compareObjects = function(a, b) {
 	for(var i in a) {
 		if(b.hasOwnProperty(i)) {
 			if(a[i] !== b[i]) {
-				if(ivar.is(a[i], 'array')) {
-					if(!ivar.compareArrays(a[i], b[i])) return false;
-				} else if(ivar.is(a[i], 'object')) {
-					if(!ivar.compareObjects(a[i], b[i])) return false;
-				} else {
-					return false;
-				}
+				if(ivar._equal.hasOwnProperty(atype))
+					return ivar._equal[atype](a, b);
+				return false;
 			}
 		} else {
 			return false;
@@ -919,12 +909,23 @@ ivar.compareObjects = function(a, b) {
 	return true;
 };
 
+ivar._equal = {},
+ivar._equal.array = ivar.compareArrays;
+ivar._equal.object = ivar.compareObjects;
+ivar._equal.date = function(a, b) {
+	return a.getTime() === b.getTime();
+};
+ivar._equal.regexp = function(a, b) {
+	return a.toString() === b.toString();
+}
+
 ivar.equal = function(a, b) {
-	if(ivar.is(a, 'array'))
-		return ivar.compareArrays(a, b);
-		
-	if(ivar.is(a, 'object'))
-		return ivar.compareObjects(a, b);
+	var atype = ivar.whatis(a), btype = ivar.whatis(b);
+	if(atype !== btype)
+		return false;
+	
+	if(ivar._equal.hasOwnProperty(atype))
+		return ivar._equal[atype](a, b);
 	
 	return a === b;
 };
@@ -947,8 +948,9 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 			extender = ivar.clone(extender);
 			
 	for (var i in extender) {
-		if (!(ivar.isSet(extended[i]) && if_not_exists))
+		if (!(ivar.isSet(extended[i]) && if_not_exists)) {
 			extended[i] = extender[i];
+		}
 	}
 	
 	if (ivar.isSet(clone))
@@ -958,7 +960,8 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 			return extender;
 };
 
-//TODO: recursive, for loop descends into feilds
+//Clones arrays and objects
+//TODO: date, regexp
 ivar.clone = function(obj) {
 	return JSON.parse(JSON.stringify(obj));
 };
