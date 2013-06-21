@@ -159,8 +159,9 @@ ivar.compareArrays = function(a, b) {
 		return false;
 	for(var i = 0; i < a.length; i++){
 		if (a[i] !== b[i]) {
+			var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
 			if(ivar._equal.hasOwnProperty(atype))
-				return ivar._equal[atype](a, b);
+				return ivar._equal[atype](a[i], b[i]);
 			return false;
 		}
 	};
@@ -241,6 +242,8 @@ Array.prototype.toObject = function() {
 	return res;
 };
 
+
+//TODO: more elegant
 ivar.toMapKey = function(value) {
 	if (ivar.isNumber(value))
 		value = value.toString();
@@ -892,8 +895,9 @@ ivar.compareObjects = function(a, b) {
 	for(var i in a) {
 		if(b.hasOwnProperty(i)) {
 			if(a[i] !== b[i]) {
+				var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
 				if(ivar._equal.hasOwnProperty(atype))
-					return ivar._equal[atype](a, b);
+					return ivar._equal[atype](a[i], b[i]);
 				return false;
 			}
 		} else {
