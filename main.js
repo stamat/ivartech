@@ -247,7 +247,7 @@ ivar.toMapKey = function(value) {
 	var type = ivar.whatis(value);
 	
 	if (type === 'function') {
-		value = value.parseName()+_+ivar.crc32(value.toString());
+		value = ivar.crc32(value.toString());
 	} else if (type === 'date') {
 		value = value.getTime();
 	} else if (type === 'object') {
