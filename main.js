@@ -152,18 +152,24 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
-//TODO: test == ===, Conditions for Object, recursion for array value
-Array.prototype.equal = function(arr) {
-	var self = this;
-	if (self === arr)
+ivar.compareArrays = function(a, b) {
+	if (a === b)
 		return true;
-	if (self.length !== arr.length)
+	if (a.length !== b.length)
 		return false;
-	self.each(function(i){
-		if (self[i] !== arr[i])
+	for(var i = 0; i < a.length; i++){
+		if (a[i] !== b[i]) {
+			var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
+			if(ivar._equal.hasOwnProperty(atype))
+				return ivar._equal[atype](a[i], b[i]);
 			return false;
-	});
+		}
+	};
 	return true;
+};
+
+Array.prototype.equal = function(arr) {
+	return ivar.compareArrays(this, arr);
 };
 
 Array.prototype.rm = function(id) {
@@ -236,24 +242,30 @@ Array.prototype.toObject = function() {
 	return res;
 };
 
+//TODO: more elegant
 ivar.toMapKey = function(value) {
-	if (ivar.isNumber(value))
-		value = value.toString();
-	else if (ivar.isBool(value))
-		value = 'bool_'+value;
-	else if (ivar.isFunction(value))
-		value = 'fn_'+value.parseName();
-	else if (ivar.isDate(value))
-		value = 'date_'+value.getTime();
-	else if (ivar.isObject(value))
-		value = 'obj_'+ivar.crc32(JSON.stringify(value));
-	else if (ivar.isArray(value))
-		value = 'arr_'+value.toString();
+	var type = ivar.whatis(value);
 	
-	return value;
+	if (type === 'function') {
+		value = ivar.crc32(value.toString());
+	} else if (type === 'date') {
+		value = value.getTime();
+	} else if (type === 'object') {
+		value = ivar.objectCRC(value);
+	} else if (type === 'array') {
+		value = ivar.arrayCRC(value);
+	}
+	
+	return  type+'_'+value;
 };
 
-//NOTE: Members of the array must be unique!
+ivar.arrayCRC = function(a) {
+	for(var i = 0; i < a.length; i++) {
+		a[i] = ivar.toMapKey(a[i]);
+	}
+	return ivar.crc32(a.toString());
+}
+
 Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {
@@ -492,12 +504,28 @@ ivar.request = function(opt, callback) {
 	
     var request = new XMLHttpRequest(); 
     request.onload = function(e) {
-    	var resp = request.responseText;
-		if (request.status != 200) resp = undefined;		
-		if(callback) callback(resp);
+		if(callback) callback(request, e);
 	}
-    request.open(defs.method, defs.uri, defs.async);
-    request.send(defs.messages);
+	
+	try {
+    	request.open(defs.method, defs.uri, defs.async, defs.user, defs.password);
+    } catch(e) {
+    	return;
+    }
+	
+	if(ivar.isSet(defs.header)) {
+		for(var i in defs.header) {
+			request.setRequestHeader(i, defs.header[i]);
+		}
+	}
+    
+    try {
+    	request.send(defs.message);
+    } catch(e) {
+    	return;
+    }
+    
+    return request;
 };
 
 ivar.eachArg = function(args, fn) {
@@ -537,6 +565,31 @@ ivar.countProperties = function(obj, fn) {
 		if(fn) fn(count, i);
 	}
 	return count;
+};
+
+ivar.sortProperties = function(o, fn) {
+	var props = [];
+	var res = {};
+	for(var i in o) {
+		props.push(i);
+	}
+	props = props.sort(fn);
+	
+	for(var i = 0; i < props.length; i++) {
+		if(ivar.is(o[props[i]], 'object'))
+			o[props[i]] = ivar.sortProperties(o[props[i]]);
+		res[props[i]] = o[props[i]];
+	}
+	
+	return res;
+};
+
+ivar.objectCRC = function(o) {
+	return ivar.crc32(JSON.stringify(ivar.sortProperties(o)));
+}
+
+ivar.crcObjectCompare = function(a, b) {
+	return ivar.objectCRC(a) === ivar.objectCRC(b);
 };
 
 ivar._private.def_buildFnList = function(str) {
@@ -839,28 +892,57 @@ ivar.whatis = function(val) {
 
 /**
  *	Compares two objects
- *	
- *	@todo Should be tested more. Should be recursive for children objects. Two 'for' loops, very slow... Dont know if it can be faster... -.-
  *
- *	@param	{object}	obj1	Any object with properties
- *	@param	{object}	obj2	Any object with properties
+ *	@param	{object}	a		Any object with properties
+ *	@param	{object}	b		Any object with properties
  *	@return	{boolean}			True if equal
  */
-//TODO: recursive check for child objects
-ivar.equal = function(obj1, obj2) {
-	if (obj1 === obj2)
+ivar.compareObjects = function(a, b) {
+	if (a === b)
 		return true;
-	for (var i in obj1) {
-		if (obj1[i] !== obj2[i])
+	for(var i in a) {
+		if(b.hasOwnProperty(i)) {
+			if(a[i] !== b[i]) {
+				var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
+				if(ivar._equal.hasOwnProperty(atype))
+					return ivar._equal[atype](a[i], b[i]);
+				return false;
+			}
+		} else {
 			return false;
+		}
 	}
-	for (var i in obj2) {
-		if (obj2[i] !== obj1[i])
+	
+	for(var i in b) {
+		if(!a.hasOwnProperty(i)) {
 			return false;
+		}
 	}
 	return true;
 };
 
+ivar._equal = {},
+ivar._equal.array = ivar.compareArrays;
+ivar._equal.object = ivar.compareObjects;
+ivar._equal.date = function(a, b) {
+	return a.getTime() === b.getTime();
+};
+ivar._equal.regexp = function(a, b) {
+	return a.toString() === b.toString();
+}
+
+ivar.equal = function(a, b) {
+	var atype = ivar.whatis(a), btype = ivar.whatis(b);
+	if(atype !== btype)
+		return false;
+	
+	if(ivar._equal.hasOwnProperty(atype))
+		return ivar._equal[atype](a, b);
+	
+	return a === b;
+};
+
+//TODO: WARNING! NOT RECURSIVE!
 /**
  *	Extends properties of a second object into first, overwriting all of it's properties if 
  *	they have same properties. Used for loading options.
@@ -878,8 +960,9 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 			extender = ivar.clone(extender);
 			
 	for (var i in extender) {
-		if (!(ivar.isSet(extended[i]) && if_not_exists))
+		if (!(ivar.isSet(extended[i]) && if_not_exists)) {
 			extended[i] = extender[i];
+		}
 	}
 	
 	if (ivar.isSet(clone))
@@ -889,7 +972,8 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 			return extender;
 };
 
-//TODO: recursive, for loop descends into feilds
+//Clones arrays and objects
+//TODO: date, regexp
 ivar.clone = function(obj) {
 	return JSON.parse(JSON.stringify(obj));
 };
