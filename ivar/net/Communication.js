@@ -43,6 +43,7 @@ ivar.namespace('ivar.net');
  */
 ivar.net.Communication = function Communication(options, history) {
 	this.registered = new ivar.data.Map();
+	this.pending = new ivar.data.Map();
 	this.sent = new ivar.data.Map();
 	this.unsuccessful = new ivar.data.Map();
 	this.received = new ivar.data.Map();
@@ -401,12 +402,13 @@ ivar.net.html5Upload = function(file, url, callback) {
 	var request = new XMLHttpRequest();
 	request.open('POST', url, true);
 	request.onload = function() {
-		print(request.responseText);
+		//ivar.echo(request.responseText);
+		var value;
 		if (request.status == 200) {
 			try {
  				value = JSON.parse(request.responseText);
 	 		} catch (e) {
-	 			error(e);
+	 			ivar.error(e);
 	 		}
 			callback(value);
 		}
