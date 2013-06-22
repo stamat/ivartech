@@ -152,22 +152,6 @@ Array.prototype.each = function(fn, reversed) {
 
 String.prototype.each = Array.prototype.each;
 
-ivar.compareArrays = function(a, b) {
-	if (a === b)
-		return true;
-	if (a.length !== b.length)
-		return false;
-	for(var i = 0; i < a.length; i++){
-		if (a[i] !== b[i]) {
-			var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
-			if(ivar._equal.hasOwnProperty(atype))
-				return ivar._equal[atype](a[i], b[i]);
-			return false;
-		}
-	};
-	return true;
-};
-
 Array.prototype.equal = function(arr) {
 	return ivar.compareArrays(this, arr);
 };
@@ -889,7 +873,6 @@ ivar.whatis = function(val) {
 	return type;
 };
 
-
 /**
  *	Compares two objects
  *
@@ -902,12 +885,7 @@ ivar.compareObjects = function(a, b) {
 		return true;
 	for(var i in a) {
 		if(b.hasOwnProperty(i)) {
-			if(a[i] !== b[i]) {
-				var atype = ivar.whatis(a[i]), btype = ivar.whatis(b[i]);
-				if(ivar._equal.hasOwnProperty(atype))
-					return ivar._equal[atype](a[i], b[i]);
-				return false;
-			}
+			if(!ivar.equal(a[i],b[i])) return false;
 		} else {
 			return false;
 		}
@@ -921,6 +899,17 @@ ivar.compareObjects = function(a, b) {
 	return true;
 };
 
+ivar.compareArrays = function(a, b) {
+	if (a === b)
+		return true;
+	if (a.length !== b.length)
+		return false;
+	for(var i = 0; i < a.length; i++){
+		if(!ivar.equal(a[i], b[i])) return false;
+	};
+	return true;
+};
+
 ivar._equal = {},
 ivar._equal.array = ivar.compareArrays;
 ivar._equal.object = ivar.compareObjects;
@@ -929,17 +918,19 @@ ivar._equal.date = function(a, b) {
 };
 ivar._equal.regexp = function(a, b) {
 	return a.toString() === b.toString();
-}
+};
 
 ivar.equal = function(a, b) {
-	var atype = ivar.whatis(a), btype = ivar.whatis(b);
-	if(atype !== btype)
+	if(a !== b) {
+		var atype = ivar.whatis(a), btype = ivar.whatis(b);
+		
+		if(atype === btype && ivar._equal.hasOwnProperty(atype))
+			return ivar._equal[atype](a, b);
+			
 		return false;
+	}
 	
-	if(ivar._equal.hasOwnProperty(atype))
-		return ivar._equal[atype](a, b);
-	
-	return a === b;
+	return true;
 };
 
 //TODO: WARNING! NOT RECURSIVE!
