@@ -656,14 +656,12 @@ ivar.isSet = function(val) {
  *	@return	{boolean}
  */
 ivar.isEmpty = function(obj) {
-	if (ivar.isSet(obj)) {
-		if (obj.length && obj.length > 0)
-			return false;
+	if (obj.length && obj.length > 0)
+		return false;
 
-		for (var key in obj) {
-			if (hasOwnProperty.call(obj, key))
-				return false;
-		}
+	for (var key in obj) {
+		if (hasOwnProperty.call(obj, key))
+			return false;
 	}
 	return true;
 };
@@ -919,6 +917,7 @@ ivar._equal.date = function(a, b) {
 ivar._equal.regexp = function(a, b) {
 	return a.toString() === b.toString();
 };
+ivar._equal['function'] = ivar._equal.regexp;
 
 ivar.equal = function(a, b) {
 	if(a !== b) {
