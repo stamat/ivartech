@@ -908,7 +908,7 @@ ivar.compareArrays = function(a, b) {
 	return true;
 };
 
-ivar._equal = {},
+ivar._equal = {};
 ivar._equal.array = ivar.compareArrays;
 ivar._equal.object = ivar.compareObjects;
 ivar._equal.date = function(a, b) {
@@ -919,16 +919,27 @@ ivar._equal.regexp = function(a, b) {
 };
 ivar._equal['function'] = ivar._equal.regexp;
 
-ivar.equal = function(a, b) {
-	if(a !== b) {
+//	uncoment to support function as string compare
+//	ivar._equal.fucntion =  ivar._equal.regexp;
+ 
+ 
+ 
+/*
+ * Are two values equal, deep compare for objects and arrays.
+ * @param a {any}
+ * @param b {any}
+ * @return {boolean} Are equal?
+ */
+var equal = function(a, b) {
+	if (a !== b) {
 		var atype = ivar.whatis(a), btype = ivar.whatis(b);
-		
-		if(atype === btype && ivar._equal.hasOwnProperty(atype))
-			return ivar._equal[atype](a, b);
-			
+ 
+		if (atype === btype)
+			return ivar._equal.hasOwnProperty(atype) ? ivar._equal[atype](a, b) : a==b;
+ 
 		return false;
 	}
-	
+ 
 	return true;
 };
 
