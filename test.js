@@ -18,32 +18,6 @@ function assertTrue(bool) {
 function test() {
 	ivar.echo(a);
 	ivar.echo(b);
-
-
-	var map = new ivar.data.Map();
-var map1 = new ivar.data.Map({a:1, b:2});
-
-console.log(map.length); //0
-console.log(map1.length); //2
-
-map.put('foo', 1);
-console.log(map.length); //1
-console.log(map.keys()); //['foo'];
-console.log(map1.keys());//['a','b'];
-map1.remove('a');
-console.log(map1.get('b')); //2
-console.log(map1.keys());//['b'];
-map1.incorporate({c:3,d:4,e:5});
-console.log(map1.keys()); //['b','c','d','e'];
-console.log(map1.length); //4
-console.log(map1.getFirst()); // 2
-console.log(map1.getLast()); // 5
-map1.put('b',15)
-console.log(map1.getById(0)); // 15
-console.log(map.equals(map1)); //false
-map1.clear();
-map1.put('foo',1);
-console.log(map.equals(map1)); //true
 }
 
 function asd() {
