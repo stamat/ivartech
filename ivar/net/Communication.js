@@ -53,7 +53,6 @@ ivar.namespace('ivar.net');
  *	@property	{string}	defaults.method='GET'
  *	@property	{string}	defaults.content_type='application/json'
  *	@property	{boolean}	history
- *	@property	{Events}	events
  */
 ivar.net.Communication = function Communication(options, history) {
 	this.registered = new ivar.data.Map();
