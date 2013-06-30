@@ -1,9 +1,10 @@
 /**
- *	@file		IVARTECH Map data class
+ *	Map data structure class
  *	@author		Nikola Stamatovic Stamat <stamat@ivartech.com>
  *	@copyright	IVARTECH http://ivartech.com
  *	@version	20130313  
- *	
+ *	@file
+ *
  *	@namespace	ivar.data
  */
 
@@ -11,10 +12,9 @@
 ivar.namespace('ivar.data');
 
 /**
- *	@class
- *	@classdesc Map class similar to Java Map, providing methods for efficient usage of traditional key-value hash table storage
- *
- *	@constructor	
+ *	Map class similar to Java Map, providing methods for efficient usage of traditional key-value hash table storage
+ *	@class 	asf		s
+ *	@constructor
  *	@property	{number}	length	Length of the map, like array length. Even though keys.length would do fine, this is kept for elegance
  *	@property	{object}	object	Object that contains key-value pairs
  *	@property	{array}		keys	Array containing key names used as keys in object to enable getFirst and getLast functionality
@@ -23,7 +23,7 @@ ivar.data.Map = function Map(o) {
 	this.length = 0;
 	var object = {};
 	var keys = [];
-	
+	var pointer = 0;
 	
 	this.incorporate = function(obj) {
 		var new_keys = [];
@@ -60,8 +60,9 @@ ivar.data.Map = function Map(o) {
 	*	@param	{Map}	map		Map to which values should be cloned
 	*/
 	this.putAll = function(map) {
-		this.clear();
-		this.incorporate(map.entrySet());
+		this.length = map.length;
+		object = map.entrySet();
+		keys = map.keys();
 	};
 
 	/**
@@ -72,7 +73,7 @@ ivar.data.Map = function Map(o) {
 	 *	@return	{any}					Returns the value of removed entry
 	 */
 	this.remove = function(k) {
-		if(!ivar.whatis(k) !== 'array')
+		if(ivar.whatis(k) !== 'array')
 			k = [k];
 		for(var i = 0; i < k.length; i++) {
 			this._remove(k[i]);
@@ -99,6 +100,51 @@ ivar.data.Map = function Map(o) {
 		}
 		if(id > -1)
 			keys.splice(id, 1);
+	};
+	
+	
+	/*
+	 *	Sorts the keys alphabetically or by provided sorting functionality
+	 *	@param	{function}	[fn]	Sorting function
+	*/
+	this.sort = function(fn) {
+		keys.sort(fn);
+	}
+	
+	this.hasNext = function() {
+		return pointer < keys.length;
+	};
+	
+	this.next = function() {
+		if(this.hasNext()) {
+			var key = keys[pointer];
+			pointer++;
+			return {key: key, value: this.get(key)};
+		}
+	};
+	
+	this.nextKey = function() {
+		if(this.hasNext()) {
+			return keys[pointer];
+		}
+	};
+	
+	this.hasPrevious = function() {
+		return pointer > 0;
+	};
+	
+	this.previous = function() {
+		if(this.hasPrevious()) {
+			pointer--;
+			var key = keys[pointer];
+			return {key: key, value: this.get(key)};
+		}
+	};
+	
+	this.previousKey = function() {
+		if(this.hasPrevious()) {
+			return keys[pointer-1];
+		}
 	};
 	
 	/**
