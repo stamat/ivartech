@@ -226,29 +226,19 @@ Array.prototype.toObject = function() {
 	return res;
 };
 
-//TODO: more elegant
 ivar.toMapKey = function(value) {
-	var type = ivar.whatis(value);
-	
-	if (type === 'function') {
-		value = ivar.crc32(value.toString());
-	} else if (type === 'date') {
-		value = value.getTime();
-	} else if (type === 'object') {
-		value = ivar.objectCRC(value);
-	} else if (type === 'array') {
-		value = ivar.arrayCRC(value);
+	var type = ivar.types[ivar.whatis(value)];
+		
+	if (type === 5) {
+		value = ivar.arrayStringify(value);
+	} else if(type === 6)
+		value = ivar.orderedStringify(value);
+	} else {
+		value = value.toString();
 	}
 	
 	return  type+'_'+value;
 };
-
-ivar.arrayCRC = function(a) {
-	for(var i = 0; i < a.length; i++) {
-		a[i] = ivar.toMapKey(a[i]);
-	}
-	return ivar.crc32(a.toString());
-}
 
 Array.prototype.map = function(field) {
 	var mapped = {};
@@ -593,7 +583,6 @@ ivar.arrayStringify = function(a, fn) {
         if(type !== 7)
         	res += ''+ val+',';
 	}
-	
 	return res.substring(res, res.lastIndexOf(','))+']';
 };
 
@@ -616,7 +605,6 @@ ivar.sortProperties = function(o, fn) {
         } 
 		res[props[i]] = val;
 	}
-	
 	return res;
 };
 
@@ -633,14 +621,6 @@ ivar.sortProperiesInArray = function(a, fn) {
 	}
 	
 	return a;
-};
-
-ivar.objectCRC = function(o) {
-	return ivar.crc32(ivar.orderedStringify(o));
-}
-
-ivar.crcObjectCompare = function(a, b) {
-	return ivar.objectCRC(a) === ivar.objectCRC(b);
 };
 
 ivar._private.def_buildFnList = function(str) {
