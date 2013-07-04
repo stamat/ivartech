@@ -70,7 +70,7 @@ ivar.data.HashCache = function(a) {
 		
 		if (type === 5) {
 			value = ivar.arrayStringify(value);
-		} else if(type === 6)
+		} else if(type === 6) {
 			value = ivar.orderedStringify(value);
 		} else {
 			value = value.toString();
