@@ -541,26 +541,29 @@ ivar.countProperties = function(obj, fn) {
 	return count;
 };
 
-ivar.orderedStringify = function(o, fn) {
-	var props = [];
-    var res = '{';
-	for(var i in o) {
-		props.push(i);
-	}
+ivar.orderedStrigify = function(o, fn) {
+	var val = o;
+	var type = ivar.types[ivar.whatis(o)];
+	if(type === 6) {
+		val = ivar._objectOrderedStrignify(o, fn);
+    } else if(type === 5) {
+    	val = ivar._arrayOrderedStringify(o, fn);
+    } else if(type === 4) {
+    	val = '"'+val+'"';
+    }
+    
+    if(type !== 7)
+    	return val;
+};
+
+ivar._objectOrderedStrignify = function(o, fn) {
+	var res = '{';
+	var props = ivar.keys(o);
 	props = props.sort(fn);
 	
 	for(var i = 0; i < props.length; i++) {
-		var val = o[props[i]];
-		var type = ivar.types[whatis(val)];
-		if(type === 6) {
-			val = ivar.orderedStringify(val, fn);
-        } else if(type === 5) {
-        	val = ivar.arrayStringify(val, fn);
-        } else if(type === 4) {
-        	val = '"'+val+'"';
-        }
-        
-        if(type !== 7)
+		var val = ivar.orderedStrigify(o[props[i]], fn);
+        if(val !== undefined)
         	res += '"'+props[i]+'":'+ val+',';
 	}
 	var lid = res.lastIndexOf(',');
@@ -569,20 +572,11 @@ ivar.orderedStringify = function(o, fn) {
     return res+'}';
 };
 
-ivar.arrayStringify = function(a, fn) {
+ivar._arrayOrderedStringify = function(a, fn) {
 	var res = '[';
 	for(var i = 0; i < a.length; i++) {
-		var val = a[i];
-		var type = ivar.types[ivar.whatis(val)];
-		if(type === 6) {
-			val = ivar.orderedStringify(val, fn);
-        } else if(type === 5) {
-        	val = ivar.arrayStringify(val, fn);
-        } else if(type === 4) {
-        	val = '"'+val+'"';
-        }
-        
-        if(type !== 7)
+		var val = ivar.orderedStrigify(a[i], fn);
+        if(val !== undefined)
         	res += ''+ val+',';
 	}
 	var lid = res.lastIndexOf(',');
@@ -592,40 +586,32 @@ ivar.arrayStringify = function(a, fn) {
 };
 
 ivar.sortProperties = function(o, fn) {
-	var props = [];
-	var res = {};
-	for(var i in o) {
-		props.push(i);
-	}
+	var res = o;
+	var type = ivar.types[ivar.whatis(o)];
+	if(type === 6) {
+		res = ivar._objectSortProperties(val, fn);
+    } else if(type === 5) {
+    	res = ivar._arraySortProperties(val, fn);
+    }
+	return res;
+};
+
+ivar._objectSortProperties = function(o, fn) {
+	var props = ivar.keys(o);
 	props = props.sort(fn);
 	
 	for(var i = 0; i < props.length; i++) {
-		var val = o[props[i]];
-		var type = ivar.types[ivar.whatis(val)];
-		
-		if(type === 6) {
-			val = ivar.sortProperties(val, fn);
-        } else if(type === 5) {
-        	val = ivar.sortProperiesInArray(val, fn);
-        } 
-		res[props[i]] = val;
+		res[props[i]] = ivar.sortProperties(o[props[i]]);
 	}
 	return res;
 };
 
-ivar.sortProperiesInArray = function(a, fn) {
+ivar._arraySortProperties = function(a, fn) {
+	res = [];
 	for(var i = 0; i < a.length; i++) {
-		var val = a[i];
-		var type = ivar.types[ivar.whatis(val)];
-		if(type === 6) {
-			val = ivar.sortProperties(val, fn);
-        } else if(type === 5) {
-        	val = ivar.sortProperiesInArray(val, fn);
-        }
-        a[i] = val;
+        res[i] = ivar.sortProperties(a[i]);
 	}
-	
-	return a;
+	return res;
 };
 
 ivar._private.def_buildFnList = function(str) {
@@ -937,6 +923,16 @@ ivar.whatis = function(val) {
 	return type;
 };
 
+ivar.keys = function(o) {
+	if(Object.keys)
+		return Object.keys(o);
+	var res = [];
+	for (var i in o) {
+		res.push(i);
+	}
+	return res;
+};
+
 /**
  *	Compares two objects
  *
@@ -1041,8 +1037,33 @@ ivar.extend = function(extended, extender, clone, if_not_exists) {
 
 //Clones arrays and objects
 //TODO: date, regexp
-ivar.clone = function(obj) {
-	return JSON.parse(JSON.stringify(obj));
+ivar.clone = function(o) {
+	var res = null;
+	var type = ivar.types[ivar.whatis(o)];
+	if(type === 6) {
+		res = ivar.cloneObject(o);
+    } else if(type === 5) {
+    	res = ivar.cloneArray(o);
+    } else {
+    	res = o;
+    }
+    return res;
+};
+
+ivar.cloneObject = function(o) {
+	var res = {};
+	for(var i in o) {
+		res[i] = ivar.clone(o[i]);
+	}
+	return res;
+};
+
+ivar.cloneArray = function(a) {
+	var res = [];
+	for(var i = 0; i < a.length; i++) {
+		res[i] = ivar.clone(a[i]);
+	}
+	return res;
 };
 
 /**
