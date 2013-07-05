@@ -563,8 +563,10 @@ ivar.orderedStringify = function(o, fn) {
         if(type !== 7)
         	res += '"'+props[i]+'":'+ val+',';
 	}
-	
-    return res.substring(res, res.lastIndexOf(','))+'}';
+	var lid = res.lastIndexOf(',');
+	if (lid > -1)
+		res = res.substring(res, lid);
+    return res+'}';
 };
 
 ivar.arrayStringify = function(a, fn) {
@@ -583,7 +585,10 @@ ivar.arrayStringify = function(a, fn) {
         if(type !== 7)
         	res += ''+ val+',';
 	}
-	return res.substring(res, res.lastIndexOf(','))+']';
+	var lid = res.lastIndexOf(',');
+	if (lid > -1)
+		res = res.substring(res, lid);
+	return res+']';
 };
 
 ivar.sortProperties = function(o, fn) {
