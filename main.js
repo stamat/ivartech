@@ -229,9 +229,7 @@ Array.prototype.toObject = function() {
 ivar.toMapKey = function(value) {
 	var type = ivar.types[ivar.whatis(value)];
 		
-	if (type === 5) {
-		value = ivar.arrayStringify(value);
-	} else if(type === 6) {
+	if (type === 5 || type === 6) {
 		value = ivar.orderedStringify(value);
 	} else {
 		value = value.toString();
@@ -1005,34 +1003,46 @@ ivar.equal = function(a, b) {
 	return true;
 };
 
-//TODO: WARNING! NOT RECURSIVE!
 /**
  *	Extends properties of a second object into first, overwriting all of it's properties if 
  *	they have same properties. Used for loading options.
  *	
  *	@param	{object}	extended	First object to be extended
  *	@param	{object}	extender	Second object extending the first one
- *	@param	{number[0|1]|boolean}	[clone]		First or the second object
  *	@return	{object}				Returns cloned object
  */
-ivar.extend = function(extended, extender, clone, if_not_exists) {
-	if (ivar.isSet(clone))
-		if ((clone <= 0) || !clone)
-			extended = ivar.clone(extended);
-		else if ((clone >= 1) || clone)
-			extender = ivar.clone(extender);
-			
-	for (var i in extender) {
-		if (!(ivar.isSet(extended[i]) && if_not_exists)) {
-			extended[i] = extender[i];
+ivar.extend = function(o1, o2, if_not_exists) {
+	for (var i in o2) {
+		if (!(ivar.isSet(o1[i]) && if_not_exists)) {
+			if (ivar.whatis(o1[i]) === 'object' && ivar.whatis(o2[i]) === 'object') {
+				ivar.extend(o1[i], o2[i], clone, if_not_exists);
+			} else {
+				o1[i] = o2[i]
+			}
 		}
 	}
 	
-	if (ivar.isSet(clone))
-		if ((clone <= 0) || !clone)
-			return extended;
-		else if ((clone >= 1) || clone)
-			return extender;
+	return o1;
+};
+
+ivar.extendToLevel = function(o1, o2, lvl, if_not_exists) {
+	var count = 0;	
+	return ivar._extendToLevel(o1, o2, lvl, if_not_exists, count);
+};
+
+ivar._extendToLevel = function(o1, o2, lvl, if_not_exists, count) {
+	for (var i in o2) {
+		if (!(ivar.isSet(o1[i]) && if_not_exists)) {
+			if (lvl > count && ivar.whatis(o1[i]) === 'object' && ivar.whatis(o2[i]) === 'object') {
+				count++;
+				ivar._extendToLevel(o1, o2, lvl, if_not_exists, count);
+			} else {
+				o1[i] = o2[i];
+			}
+		}
+	}
+	
+	return o1;
 };
 
 //Clones arrays and objects
@@ -1041,16 +1051,16 @@ ivar.clone = function(o) {
 	var res = null;
 	var type = ivar.types[ivar.whatis(o)];
 	if(type === 6) {
-		res = ivar.cloneObject(o);
+		res = ivar._cloneObject(o);
     } else if(type === 5) {
-    	res = ivar.cloneArray(o);
+    	res = ivar._cloneArray(o);
     } else {
     	res = o;
     }
     return res;
 };
 
-ivar.cloneObject = function(o) {
+ivar._cloneObject = function(o) {
 	var res = {};
 	for(var i in o) {
 		res[i] = ivar.clone(o[i]);
@@ -1058,7 +1068,7 @@ ivar.cloneObject = function(o) {
 	return res;
 };
 
-ivar.cloneArray = function(a) {
+ivar._cloneArray = function(a) {
 	var res = [];
 	for(var i = 0; i < a.length; i++) {
 		res[i] = ivar.clone(a[i]);
