@@ -587,17 +587,18 @@ ivar.sortProperties = function(o, fn) {
 	var res = o;
 	var type = ivar.types[ivar.whatis(o)];
 	if(type === 6) {
-		res = ivar._objectSortProperties(val, fn);
+		res = ivar._objectSortProperties(o, fn);
     } else if(type === 5) {
-    	res = ivar._arraySortProperties(val, fn);
+    	res = ivar._arraySortProperties(o, fn);
     }
 	return res;
 };
 
 ivar._objectSortProperties = function(o, fn) {
+	var res = {};
 	var props = ivar.keys(o);
-	props = props.sort(fn);
-	
+
+	props = fn ? props.sort(fn): props.sort();
 	for(var i = 0; i < props.length; i++) {
 		res[props[i]] = ivar.sortProperties(o[props[i]]);
 	}
