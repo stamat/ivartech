@@ -557,7 +557,7 @@ ivar.orderedStrigify = function(o, fn) {
 ivar._objectOrderedStrignify = function(o, fn) {
 	var res = '{';
 	var props = ivar.keys(o);
-	props = props.sort(fn);
+	props = fn ? props.sort(fn): props.sort();
 	
 	for(var i = 0; i < props.length; i++) {
 		var val = ivar.orderedStrigify(o[props[i]], fn);
