@@ -584,6 +584,17 @@ ivar._arrayOrderedStringify = function(a, fn) {
 };
 
 ivar.sortProperties = function(o, fn) {
+	var res = {};
+	var props = ivar.keys(o);
+	props = fn ? props.sort(fn): props.sort();
+	
+	for(var i = 0; i < props.length; i++) {
+		res[props[i]] = o[props[i]];
+	}
+	return res;
+};
+
+ivar.deepSortProperties = function(o, fn) {
 	var res = o;
 	var type = ivar.types[ivar.whatis(o)];
 	if(type === 6) {
@@ -600,15 +611,15 @@ ivar._objectSortProperties = function(o, fn) {
 
 	props = fn ? props.sort(fn): props.sort();
 	for(var i = 0; i < props.length; i++) {
-		res[props[i]] = ivar.sortProperties(o[props[i]]);
+		res[props[i]] = ivar.deepSortProperties(o[props[i]]);
 	}
 	return res;
 };
 
 ivar._arraySortProperties = function(a, fn) {
-	res = [];
+	var res = [];
 	for(var i = 0; i < a.length; i++) {
-        res[i] = ivar.sortProperties(a[i]);
+        res[i] = ivar.deepSortProperties(a[i]);
 	}
 	return res;
 };
