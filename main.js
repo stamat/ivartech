@@ -630,7 +630,6 @@ ivar._private.def_buildFnList = function(str) {
 	var temp = [];
 	var pref = '*';
 	for(var i = 0; i < args.length; i++) {
-		args[i] = args[i].replace(/^\s+|\s+$/g,''); //trim space
 		var notMandatory = args[i].startsWith(pref);
 		if (notMandatory) {
 			if (argSets.length === 0)
