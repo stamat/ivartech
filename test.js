@@ -33,7 +33,7 @@ function asd() {
 	//st.put('fool');
 	
 	var out = ivar.def({
-		'int': function(a) {
+		'integer': function(a) {
 			alert('Here is int '+a);
 		},
 		
@@ -41,18 +41,21 @@ function asd() {
 			alert('Here is float '+a);
 		},
 		
-		'string': function(a) {
+		'string, ?, integer': function(a) {
 			alert('Here is string '+a);
 		},
 		
-		'int,string': function(a, b) {
+		'string, string': function(a, b) {
 			alert('Here is an int '+a+' and a string '+b);
 		},
+		
 		'default': function(obj) {
 			alert('Here is some other value '+ obj);
 		}
 		
 	});
+	
+	out(new Date(), 34);
 		
 	var u = ivar.setUniqueObject().__uid__;
 	ivar.echo(u);

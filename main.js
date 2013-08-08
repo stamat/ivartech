@@ -649,24 +649,29 @@ ivar._private.def_buildFnList = function(str) {
 	return argSets;
 };
 
+//TODO: number and ? (any type) it will require a tree search, develop what you have started
+//TODO: this really requires more thought
 ivar.def = function(functions, parent) {
 	var fn = {};
 	if (typeof functions === 'function') {
 		fn = functions;
 	} else {
 		for(var i in functions) {
-			i = i.replace(/\s*/g,'');
-			if(!/^\*?(null|undefined|boolean|integer|float|string|function|object|date|regexp|number|\?)(,\*?(null|undefined|boolean|integer|float|string|function|object|date|regexp|number|\?))*$/.test(i)) {
-				throw "Invalid argument data type or invalid def string";	
+			var trmd = i.replace(/\s*/g,''); //trim space
+			
+			if(!/^(null|undefined|boolean|integer|float|string|function|object|date|regexp|default)(,\*?(null|undefined|boolean|integer|float|string|function|object|date|regexp))*$/.test(trmd)) {
+				throw "Invalid arguments data types string";	
 			}
+			
+			
 			if(i.indexOf('*') > -1) {
-				var argSets = ivar._private.def_buildFnList(i);
+				var argSets = ivar._private.def_buildFnList(trmd);
 		
 				for(var j = 0; j < argSets.length; j++) {
 					fn[argSets[j]] = functions[i];
 				}
 			} else {
-				fn[i] = functions[i];
+				fn[trmd] = functions[i];
 			}
 		}
 	}

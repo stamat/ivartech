@@ -1,10 +1,10 @@
 /**
- *	@file		Stack.js simple stack data structure
+ *	Simple stack data structure
  *	@author		Nikola Stamatovic Stamat <stamat@ivartech.com>
  *	@copyright	IVARTECH http://ivartech.com
  *	@version	20130623  
  *	
- *	@namespace	ivar
+ *	@namespace	ivar.data
  */
  
 ivar.namespace('ivar.data');
