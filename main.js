@@ -655,6 +655,10 @@ ivar.def = function(functions, parent) {
 		fn = functions;
 	} else {
 		for(var i in functions) {
+			i = i.replace(/\s*/g,'');
+			if(!/^\*?(null|undefined|boolean|integer|float|string|function|object|date|regexp|number|\?)(,\*?(null|undefined|boolean|integer|float|string|function|object|date|regexp|number|\?))*$/.test(i)) {
+				throw "Invalid argument data type or invalid def string";	
+			}
 			if(i.indexOf('*') > -1) {
 				var argSets = ivar._private.def_buildFnList(i);
 		
