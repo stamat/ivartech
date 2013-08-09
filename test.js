@@ -28,20 +28,30 @@ function test() {
 	t.put(['integer','string', 'object'], function rofl(){console.log('2')});
 	t.put(['float']);
 	t.put(['integer','string'], function omg(){console.log('3')})
-	console.log(t);
+	console.log(t.remove(['integer','string']));
+	console.log(t.get(['integer']).hasChildren());
 }
 
 function asd() {
 	var test = ['omgzlol','omfg','lol'];
 	var test1 = ['omgzlol','rofl','zlol', 'yolo'];
 	var test2 = ['rofl'];
-	var st = new ivar.data.StringTree();
-	st.put(test);
-	st.put(test1);
-	st.put(test2);
-	//st.put('omg');
-	//st.put('foo');
-	//st.put('fool');
+	var st = new ivar.data.Tree();
+	
+	function stPut(st, arr) {
+		for(var i = 0; i < arr.length; i++) {
+			st.put(arr[i]);
+		}
+	}
+	
+	stPut(st, test);
+	stPut(st, test1);
+	stPut(st, test2);
+	st.put('omg', 'COOL');
+	st.put('foo');
+	st.put('fool');
+	
+	console.log(st.getValue('omfg'));
 	
 	var out = ivar.def({
 		'integer': function(a) {
