@@ -238,6 +238,14 @@ ivar.toMapKey = function(value) {
 	return  type+'_'+value;
 };
 
+Array.prototype.merge = function(arr) {
+	var map = this.map();
+	for (var i = 0; i < arr.length; i++) {
+		if(!map.hasOwnProperty(ivar.toMapKey(arr[i])))
+			this.push(arr[i]);
+	}
+};
+
 Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {

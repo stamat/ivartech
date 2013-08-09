@@ -17,6 +17,10 @@ function assertTrue(bool) {
 }
 
 function test() {
+	var a1 = ['foo', 'bar', 1,2,4];
+	var a2 = ['foo', 'baz', 1,3,5];
+	a1.merge(a2);
+	console.log(a1);
 	ivar.echo(a);
 	ivar.echo(b);
 	var t = new ivar.data.Tree();
