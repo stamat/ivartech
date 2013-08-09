@@ -81,6 +81,10 @@ ivar.data.Tree = function() {
 	this.root = new ivar.data.Node('root');
 };
 
+ivar.data.Tree.prototype.clear = function() {
+	this.root = new ivar.data.Node('root');
+};
+
 ivar.data.Tree.prototype.put = function(chain, val, root) {
 	var curr = this.root;
 	if(root !== undefined)
@@ -121,4 +125,47 @@ ivar.data.Tree.prototype.remove = function(chain, root) {
 	var res = this.get(chain, root);
 	if(res !== undefined)
 		return res.remove();
+};
+
+/**
+ *	Builds a tree out of passed object
+ */
+ivar.data.Tree.prototype.parse = function(obj) {
+	var curr = this.root;
+	var parseObject = function(obj, parent) {
+		for(var i in obj) {
+			var node = parent.addChild(i);
+			if(Object.prototype.toString.call(obj[i])
+		.match(/^\[object\s(.*)\]$/)[1].toLowerCase() === 'object') {
+				parseObject(obj[i], node);
+			} else {
+				node.value = obj[i];
+			}
+		}
+	};
+	
+	parseObject(obj, curr);
+	this.root = curr;
+	return this;
+};
+
+/**
+ *	Builds an object out of the current tree
+ */
+ivar.data.Tree.prototype.build = function() {
+	var res = {};
+	
+	var traverse = function(node, obj) {
+		for(var i = 0; i < node.children.length; i++) {
+			if(node.children[i].hasChildren()) {
+				obj[node.children[i].name] = {};
+				traverse(node.children[i], obj[node.children[i].name]);
+			} else {
+				obj[node.children[i].name] = node.children[i].value;
+			}
+		}
+	}
+	
+	traverse(this.root, res);
+	return res;
 };

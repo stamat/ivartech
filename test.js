@@ -1,7 +1,7 @@
 ivar.require('ivar/html.js');
 ivar.require('ivar.test.*');
 ivar.require('ivar.patt.Events');
-ivar.require('ivar.data.StringTree');
+//ivar.require('ivar.data.StringTree');
 ivar.require('ivar.data.Graph');
 ivar.require('ivar.data.Map');
 ivar.require('ivar.data.Tree');
@@ -50,6 +50,31 @@ function asd() {
 	st.put('omg', 'COOL');
 	st.put('foo');
 	st.put('fool');
+	
+	var to = new ivar.data.Tree().parse({ 
+    "id" : 1490,
+    "married" : true,
+    "name" : "Larry Smith",
+    "daughter" : { 
+		"id" : 1490,
+		"married" : true,
+		"name" : "Larry Smith",
+		"sons" : null,
+		"daughters" : [ 
+		    { 
+		    "age" : 25,
+		    "name" : "Melissa"
+		    },
+		    { 
+		    "age" : 11,
+		    "name" : "Melissa"
+		    }
+		]
+    }
+ });
+ 
+ 	console.log(to);
+ 	console.log(to.build());
 	
 	console.log(st.getValue('omfg'));
 	
