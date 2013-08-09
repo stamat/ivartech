@@ -4,6 +4,7 @@ ivar.require('ivar.patt.Events');
 ivar.require('ivar.data.StringTree');
 ivar.require('ivar.data.Graph');
 ivar.require('ivar.data.Map');
+ivar.require('ivar.data.Tree');
 ivar.require('http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
 ivar.require('ivar.net.Communication');
 
@@ -18,6 +19,12 @@ function assertTrue(bool) {
 function test() {
 	ivar.echo(a);
 	ivar.echo(b);
+	var t = new ivar.data.Tree();
+	t.put(['integer','string', 'boolean'], function lol(){console.log('1')});
+	t.put(['integer','string', 'object'], function rofl(){console.log('2')});
+	t.put(['float']);
+	t.put(['integer','string'], function omg(){console.log('3')})
+	console.log(t);
 }
 
 function asd() {
