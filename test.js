@@ -30,7 +30,8 @@ function test() {
 	t.put(['float']);
 	t.put(['integer','string'], function omg(){console.log('3')})
 	console.log(t.remove(['integer','string']));
-	console.log(t.get(['integer']).hasChildren());
+	console.log(t);
+	console.log(t.get(['integer']));
 }
 
 function asd() {

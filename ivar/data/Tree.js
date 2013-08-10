@@ -80,7 +80,6 @@ ivar.data.Node.prototype.addChild = function(name, value, end) {
  */
 ivar.data.Tree = function() {
 	this.root = new ivar.data.Node('root');
-	this.length = 0;
 };
 
 ivar.data.Tree.prototype.clear = function() {
@@ -88,19 +87,16 @@ ivar.data.Tree.prototype.clear = function() {
 };
 
 ivar.data.Tree.prototype.put = function(path, val, root) {
-	var curr = this.root;
-	if(root !== undefined)
-		curr = root;
-	if(this.length < path.length) this.length = path.length;
+	if(root === undefined) root = this.root;
 	
 	for(var i = 0; i < path.length; i++) {
 		if(i === path.length-1) {
-			curr = curr.addChild(path[i], val, true);
+			root = root.addChild(path[i], val, true);
 			break;
 		}
-		curr = curr.addChild(path[i]);
+		root = root.addChild(path[i]);
 	}
-	return curr;
+	return root;
 };
 
 ivar.data.Tree.prototype.pathExists = function(path, root) {
@@ -113,15 +109,11 @@ ivar.data.Tree.prototype.exists = function(path) {
 };
 
 ivar.data.Tree.prototype.get = function(path, root) {
-	var curr = this.root;
-	if(root !== undefined)
-		curr = root;
+	if(root === undefined) root = this.root;
 	for(var i = 0; i < path.length; i++) {
-		curr = curr.getChild(path[i]);
-		if(curr === undefined) break;
-		if(i === path.length-1) {
-			return curr;
-		}
+		root = root.getChild(path[i]);
+		if(root === undefined) break;
+		if(i === path.length-1) return root;
 	}
 };
 
@@ -134,35 +126,28 @@ ivar.data.Tree.prototype.getValue = function(path, root) {
 ivar.data.Tree.prototype.remove = function(path, root) {
 	var node = this.get(path, root);
 	if(node !== undefined) {
-		var res = node.remove();
-		this.length = this.countLevels();
-		return res;
+		return node.remove();
 	}
 };
 
-ivar.data.Tree.prototype.each = function(fn, root) {
-	var curr = this.root;
-	if(root !== undefined)
-		curr = root;
-		
+ivar.data.Tree.prototype.each = function(perNode, root) {
+	if(root === undefined) root = this.root;
+	
 	var traverse = function(node) {
 		for(var i = 0; i < node.children.length; i++) {
-			fn(node.children[i]);
+			perNode(node.children[i]);
 			if(node.children[i].hasChildren()) {
 				traverse(node.children[i]);
 			}
 		}
 	};
-	
-	traverse(curr);
+	traverse(root);
 };
 
 //TODO: doesnt work as it should
 ivar.data.Tree.prototype.getLevel = function(level, root) {
-	
 	if(root === undefined) root = this.root;	
-	var l = 0;
-	
+	var l = 1;
 	var traverse = function(nodes) {
 		var all_children = [];
 		for(var i = 0; i < nodes.length; i++) {
@@ -170,62 +155,38 @@ ivar.data.Tree.prototype.getLevel = function(level, root) {
 				all_children = all_children.concat(nodes[i].children);
 		}
 		
-		if(level !== undefined && level === l) return all_children;
+		if(level === l) return all_children;
 		
-		l++;
-		
-		if(all_children.length > 0)
+		if(all_children.length > 0) {
+			l++;
 			return traverse(all_children);
+		}
 	};
 	
-	return traverse(root.children);
+	return traverse([root]);
 };
 
 ivar.data.Tree.prototype.countLevels = function(root) {
 	if(root === undefined) root = this.root;	
 	var l = 0;
-	
-	var traverse = function(nodes) {
-		l++;
-		var all_children = [];
-		for(var i = 0; i < nodes.length; i++) {
-			if(nodes[i].hasChildren()) {
-				all_children = all_children.concat(nodes[i].children);
-			}
-		}
-		
-		if(all_children.length > 0)
-			traverse(all_children);
-	};
-	
-	traverse(root.children);
-	
+	this.eachLevel(root, function(a){l++;});	
 	return l;
 };
 
-
-ivar.data.Tree.prototype.bfTraverseDown = function(fn, level, root) {
-	if(root === undefined) root = this.root;	
-	var l = 0;
-	
-	var traverse = function(nodes) {
-		l++;
-		var all_children = [];
-		for(var i = 0; i < nodes.length; i++) {
-			fn(nodes[i]);
-			if(nodes[i].hasChildren()) {
-				all_children = all_children.concat(nodes[i].children);
-			}
+ivar.data.Tree.prototype.eachLevel = function(nodes, perLevel, perNode) {
+	var all_children = [];
+	if(nodes.length === undefined) nodes = [nodes];
+	for(var i = 0; i < nodes.length; i++) {
+		if(perNode) perNode(nodes[i]);
+		if(nodes[i].hasChildren()) {
+			all_children = all_children.concat(nodes[i].children);
 		}
-		
-		if(level !== undefined && level === l) return all_children;
-		
-		if(all_children.length > 0)
-			traverse(all_children);
-	};
-	
-	traverse(root.children);
-};
+	}
+	if(all_children.length > 0) {
+		if(perLevel) perLevel(all_children);
+		this.eachLevel(all_children, perLevel, perNode);
+	}
+}
 
 ivar.data.Tree.prototype.getLeaves = function() {
 	var res = [];
@@ -239,13 +200,52 @@ ivar.data.Tree.prototype.equals = function() {
 	//TODO
 };
 
-ivar.data.Tree.prototype.find = function(val, field) {
+ivar.data.Tree.prototype.findAll = function(val, field) {
 	var res = [];
 	if(field === undefined) field = 'name';
 	this.each(function(n){
 		if(ivar.equal(n[field], val)) res.push(n);
 	});
 	return res;
+};
+
+ivar.data.Tree.prototype.dfs = function(val, field, root) {
+	if(root === undefined) root = this.root;
+	if(field === undefined) field = 'name';
+	
+	var traverse = function(node) {
+		for(var i = 0; i < node.children.length; i++) {
+			if(ivar.equal(node.children[i][field], val)) return node.children[i];
+			if(node.children[i].hasChildren()) {
+				return traverse(node.children[i]);
+			}
+		}
+	};
+	return traverse(root);
+};
+
+ivar.data.Tree.prototype.bfs = function(val, field, root) {
+	if(root === undefined) root = this.root;
+	if(field === undefined) field = 'name';
+	
+	var traverse = function(nodes) {
+		var all_children = [];
+		for(var i = 0; i < nodes.length; i++) {
+			if(ivar.equal(nodes[i][field], val)) return nodes[i];
+			if(nodes[i].hasChildren())
+				all_children = all_children.concat(nodes[i].children);
+		}
+		
+		if(all_children.length > 0)
+			return traverse(all_children);
+	};
+	
+	return traverse([root]);
+};
+
+ivar.data.Tree.prototype.find = function(val, field, type, root) {
+	if(type === undefined) type = 'dfs';
+	return this[type](val, field, root);
 };
 
 ivar.data.Tree.prototype.getEnds = function() {
@@ -285,7 +285,7 @@ ivar.data.Tree.prototype.parse = function(obj) {
 		for(var i in obj) {
 			var node = parent.addChild(i);
 			if(Object.prototype.toString.call(obj[i])
-		.match(/^\[object\s(.*)\]$/)[1].toLowerCase() === 'object') {
+		.match(/^\[object\s(.*)\]$/)[1].toLowerCase() === 'object') { //TODO:WHAT IF IT IS A TREE OR A NODE?
 				parseObject(obj[i], node);
 			} else {
 				node.value = obj[i];
