@@ -52,7 +52,7 @@ function asd() {
 	st.put('foo');
 	st.put('fool');
 	
-	console.log(st.getPaths(st.getLeaves()));
+	console.log(st.getLevel(1));
 	
 	var to = new ivar.data.Tree().parse({ 
     "id" : 1490,

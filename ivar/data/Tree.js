@@ -17,12 +17,13 @@ ivar.namespace('ivar.data');
  *	Which means that it needs a controler in order to offer a full tree functionality
  *	@class
  */
-ivar.data.Node = function(name, parent, value) {
+ivar.data.Node = function(name, parent, value, end) {
 	this.children = [];
 	if(name === undefined) throw 'Node must have a name';
 	this.name = name;
 	value !== undefined ? this.value = value : this.value = null;
 	parent !== undefined ? this.parent = parent : this.parent = null;
+	end !== undefined ? this.end = end : this.end = false;
 	this.level = 0;
 };
 
@@ -58,14 +59,14 @@ ivar.data.Node.prototype.hasChildren = function() {
 	return this.children.length > 0;
 };
 
-ivar.data.Node.prototype.addChild = function(name, value) {
+ivar.data.Node.prototype.addChild = function(name, value, end) {
 	var node = this.getChild(name);
 	if(node  === undefined) {
-		node = new ivar.data.Node(name, this, value);
+		node = new ivar.data.Node(name, this, value, end);
 		this.children.push(node);
 	} else {
-		if(value !== undefined)
-			node.value = value;
+		if(value !== undefined) node.value = value;
+		if(end !== undefined) node.end = end;
 	}
 	if(node.parent !== null)
 		node.level = node.parent.level+1;
@@ -79,6 +80,7 @@ ivar.data.Node.prototype.addChild = function(name, value) {
  */
 ivar.data.Tree = function() {
 	this.root = new ivar.data.Node('root');
+	this.length = 0;
 };
 
 ivar.data.Tree.prototype.clear = function() {
@@ -89,17 +91,25 @@ ivar.data.Tree.prototype.put = function(path, val, root) {
 	var curr = this.root;
 	if(root !== undefined)
 		curr = root;
+	if(this.length < path.length) this.length = path.length;
+	
 	for(var i = 0; i < path.length; i++) {
 		if(i === path.length-1) {
-			curr.addChild(path[i], val);
+			curr = curr.addChild(path[i], val, true);
 			break;
 		}
 		curr = curr.addChild(path[i]);
 	}
+	return curr;
 };
 
-ivar.data.Tree.prototype.exists = function(path, root) {
+ivar.data.Tree.prototype.pathExists = function(path, root) {
 	return this.get(path, root) !== undefined;
+};
+
+ivar.data.Tree.prototype.exists = function(path) {
+	var node = this.get(path, this.root);
+	return node !== undefined && node.end;
 };
 
 ivar.data.Tree.prototype.get = function(path, root) {
@@ -116,15 +126,18 @@ ivar.data.Tree.prototype.get = function(path, root) {
 };
 
 ivar.data.Tree.prototype.getValue = function(path, root) {
-	var res = this.get(path, root);
-	if(res !== undefined)
-		return res.value;
+	var node = this.get(path, root);
+	if(node !== undefined)
+		return node.value;
 };
 
 ivar.data.Tree.prototype.remove = function(path, root) {
-	var res = this.get(path, root);
-	if(res !== undefined)
-		return res.remove();
+	var node = this.get(path, root);
+	if(node !== undefined) {
+		var res = node.remove();
+		this.length = this.countLevels();
+		return res;
+	}
 };
 
 ivar.data.Tree.prototype.each = function(fn, root) {
@@ -144,6 +157,76 @@ ivar.data.Tree.prototype.each = function(fn, root) {
 	traverse(curr);
 };
 
+//TODO: doesnt work as it should
+ivar.data.Tree.prototype.getLevel = function(level, root) {
+	
+	if(root === undefined) root = this.root;	
+	var l = 0;
+	
+	var traverse = function(nodes) {
+		var all_children = [];
+		for(var i = 0; i < nodes.length; i++) {
+			if(nodes[i].hasChildren())
+				all_children = all_children.concat(nodes[i].children);
+		}
+		
+		if(level !== undefined && level === l) return all_children;
+		
+		l++;
+		
+		if(all_children.length > 0)
+			return traverse(all_children);
+	};
+	
+	return traverse(root.children);
+};
+
+ivar.data.Tree.prototype.countLevels = function(root) {
+	if(root === undefined) root = this.root;	
+	var l = 0;
+	
+	var traverse = function(nodes) {
+		l++;
+		var all_children = [];
+		for(var i = 0; i < nodes.length; i++) {
+			if(nodes[i].hasChildren()) {
+				all_children = all_children.concat(nodes[i].children);
+			}
+		}
+		
+		if(all_children.length > 0)
+			traverse(all_children);
+	};
+	
+	traverse(root.children);
+	
+	return l;
+};
+
+
+ivar.data.Tree.prototype.bfTraverseDown = function(fn, level, root) {
+	if(root === undefined) root = this.root;	
+	var l = 0;
+	
+	var traverse = function(nodes) {
+		l++;
+		var all_children = [];
+		for(var i = 0; i < nodes.length; i++) {
+			fn(nodes[i]);
+			if(nodes[i].hasChildren()) {
+				all_children = all_children.concat(nodes[i].children);
+			}
+		}
+		
+		if(level !== undefined && level === l) return all_children;
+		
+		if(all_children.length > 0)
+			traverse(all_children);
+	};
+	
+	traverse(root.children);
+};
+
 ivar.data.Tree.prototype.getLeaves = function() {
 	var res = [];
 	this.each(function(n){
@@ -152,24 +235,46 @@ ivar.data.Tree.prototype.getLeaves = function() {
 	return res;
 };
 
-ivar.data.Tree.prototype.getPaths = function() {
-	var paths = [];
-	
-	var leaves = this.getLeaves();
-	
-	for(var i = 0; i < leaves.length; i++) {
-		var path = [];
-		var node = leaves[i];
-		while(node.parent !== null) {
-			path[node.level-1] = node.name;
-			node = node.parent;
-		}
-		paths.push(path);
+ivar.data.Tree.prototype.equals = function() {
+	//TODO
+};
+
+ivar.data.Tree.prototype.find = function(val, field) {
+	var res = [];
+	if(field === undefined) field = 'name';
+	this.each(function(n){
+		if(ivar.equal(n[field], val)) res.push(n);
+	});
+	return res;
+};
+
+ivar.data.Tree.prototype.getEnds = function() {
+	return this.find(true, 'end');
+};
+
+ivar.data.Tree.prototype.traverseUp = function(node, field) {
+	var path = [];
+	var n = node;
+	var f;
+	while(n.parent !== null) {
+		field !== undefined && n.hasOwnProperty(field) ? f = n[field] : f = n;
+		path[n.level-1] = f;
+		n = n.parent;
 	}
-	
+	return path;
+};
+
+ivar.data.Tree.prototype.getPaths = function(set, field) {
+	var paths = [];
+	for(var i = 0; i < set.length; i++) {
+		paths.push(this.traverseUp(set[i], field));
+	}
 	return paths;
 };
 
+ivar.data.Tree.prototype.getEntries = function() {
+	return this.getPaths(this.getEnds(), 'name');
+};
 
 /**
  *	Builds a tree out of passed object
