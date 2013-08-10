@@ -259,6 +259,30 @@ Array.prototype.map = function(field) {
 	return mapped;
 };
 
+Array.prototype.isUnique = function() {
+	var map = {};
+	for(var i = 0; i < this.length; i++) {
+		var map_key = ivar.toMapKey(this[i]);
+		if(map.hasOwnProperty(map_key))
+			return false;
+		map[map_key] = i;
+	}
+	return true;
+};
+
+Array.prototype.unique = function() {
+	var map = {};
+	var uni = [];
+	for(var i = 0; i < this.length; i++) {
+		var map_key = ivar.toMapKey(this[i]);
+		if(map.hasOwnProperty(map_key))
+			continue;
+		map[map_key] = i;
+		uni.push(this[i]);
+	}
+	return uni;
+};
+
 Array.prototype.sortObjectsBy = function(field, desc, type) {
 	var func = null;
 	

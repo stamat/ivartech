@@ -17,8 +17,9 @@ function assertTrue(bool) {
 }
 
 function test() {
-	var a1 = ['foo', 'bar', 1,2,4];
+	var a1 = ['foo', 'bar',2, 1,2,4, 'boo', 'ba', 'foo'];
 	var a2 = ['foo', 'baz', 1,3,5];
+	console.log(a1.unique());
 	a1.merge(a2);
 	console.log(a1);
 	ivar.echo(a);
@@ -51,6 +52,8 @@ function asd() {
 	st.put('foo');
 	st.put('fool');
 	
+	console.log(st.getPaths(st.getLeaves()));
+	
 	var to = new ivar.data.Tree().parse({ 
     "id" : 1490,
     "married" : true,
@@ -76,7 +79,7 @@ function asd() {
  	console.log(to);
  	console.log(to.build());
 	
-	console.log(st.getValue('omfg'));
+	console.log();
 	
 	var out = ivar.def({
 		'integer': function(a) {

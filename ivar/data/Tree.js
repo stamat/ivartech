@@ -1,6 +1,6 @@
 /**
  *	Non binary tree data structure with parent references for reverse traversing.
- *	Accepts a chain of names for nodes, and can, but doesn't have too store the value at the end of the chain. *Note: Nodes must be named, names can be any data type, names uniquely deifne the node. Value field of a node is by default null. If it is undefined it is considered that node doesnt exist
+ *	Accepts a path, that is, an array consisted of names for nodes, and can, but doesn't have too store the value at the end of the chain. *Note: Nodes must be named, names can be any data type, names uniquely deifne the node. Value field of a node is by default null. If it is undefined it is considered that node doesnt exist
  *
  *	@author		Nikola Stamatovic Stamat <stamat@ivartech.com>
  *	@copyright	IVARTECH http://ivartech.com
@@ -74,7 +74,7 @@ ivar.data.Node.prototype.addChild = function(name, value) {
 
 
 /**
- *	Tree class with methods of storing, getting and removing chain of nodes
+ *	Tree class with methods of storing, getting and removing path of nodes
  *	@class
  */
 ivar.data.Tree = function() {
@@ -85,47 +85,91 @@ ivar.data.Tree.prototype.clear = function() {
 	this.root = new ivar.data.Node('root');
 };
 
-ivar.data.Tree.prototype.put = function(chain, val, root) {
+ivar.data.Tree.prototype.put = function(path, val, root) {
 	var curr = this.root;
 	if(root !== undefined)
 		curr = root;
-	for(var i = 0; i < chain.length; i++) {
-		if(i === chain.length-1) {
-			curr.addChild(chain[i], val);
+	for(var i = 0; i < path.length; i++) {
+		if(i === path.length-1) {
+			curr.addChild(path[i], val);
 			break;
 		}
-		curr = curr.addChild(chain[i]);
+		curr = curr.addChild(path[i]);
 	}
 };
 
-ivar.data.Tree.prototype.exists = function(chain, root) {
-	return this.get(chain, root) !== undefined;
+ivar.data.Tree.prototype.exists = function(path, root) {
+	return this.get(path, root) !== undefined;
 };
 
-ivar.data.Tree.prototype.get = function(chain, root) {
+ivar.data.Tree.prototype.get = function(path, root) {
 	var curr = this.root;
 	if(root !== undefined)
 		curr = root;
-	for(var i = 0; i < chain.length; i++) {
-		curr = curr.getChild(chain[i]);
+	for(var i = 0; i < path.length; i++) {
+		curr = curr.getChild(path[i]);
 		if(curr === undefined) break;
-		if(i === chain.length-1) {
+		if(i === path.length-1) {
 			return curr;
 		}
 	}
 };
 
-ivar.data.Tree.prototype.getValue = function(chain, root) {
-	var res = this.get(chain, root);
+ivar.data.Tree.prototype.getValue = function(path, root) {
+	var res = this.get(path, root);
 	if(res !== undefined)
 		return res.value;
 };
 
-ivar.data.Tree.prototype.remove = function(chain, root) {
-	var res = this.get(chain, root);
+ivar.data.Tree.prototype.remove = function(path, root) {
+	var res = this.get(path, root);
 	if(res !== undefined)
 		return res.remove();
 };
+
+ivar.data.Tree.prototype.each = function(fn, root) {
+	var curr = this.root;
+	if(root !== undefined)
+		curr = root;
+		
+	var traverse = function(node) {
+		for(var i = 0; i < node.children.length; i++) {
+			fn(node.children[i]);
+			if(node.children[i].hasChildren()) {
+				traverse(node.children[i]);
+			}
+		}
+	};
+	
+	traverse(curr);
+};
+
+ivar.data.Tree.prototype.getLeaves = function() {
+	var res = [];
+	this.each(function(n){
+		if(!n.hasChildren()) res.push(n);
+	});
+	return res;
+};
+
+ivar.data.Tree.prototype.getPaths = function() {
+	var paths = [];
+	
+	var leaves = this.getLeaves();
+	
+	for(var i = 0; i < leaves.length; i++) {
+		var path = [];
+		var node = leaves[i];
+		while(node.parent !== null) {
+			path[node.level-1] = node.name;
+			node = node.parent;
+		}
+		paths.push(path);
+	}
+	
+	return paths;
+};
+
 
 /**
  *	Builds a tree out of passed object
