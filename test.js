@@ -35,9 +35,7 @@ function test() {
 }
 
 function asd() {
-	var test = ['omgzlol','omfg','lol'];
-	var test1 = ['omgzlol','rofl','zlol', 'yolo'];
-	var test2 = ['rofl'];
+	var test = ['bar','baz','bazo','foo', 'far', 'fool', 'qux', 'quid'];
 	var st = new ivar.data.Tree();
 	
 	function stPut(st, arr) {
@@ -47,13 +45,8 @@ function asd() {
 	}
 	
 	stPut(st, test);
-	stPut(st, test1);
-	stPut(st, test2);
-	st.put('omg', 'COOL');
-	st.put('foo');
-	st.put('fool');
-	
-	console.log(st.getLevel(1));
+	st.remove('quid');
+	console.log(st.exists('qux'));
 	
 	var to = new ivar.data.Tree().parse({ 
     "id" : 1490,

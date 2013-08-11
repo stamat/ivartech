@@ -80,10 +80,14 @@ ivar.data.Node.prototype.addChild = function(name, value, end) {
  */
 ivar.data.Tree = function() {
 	this.root = new ivar.data.Node('root');
+	this.leaves = [];
+	this.ends = [];
 };
 
 ivar.data.Tree.prototype.clear = function() {
 	this.root = new ivar.data.Node('root');
+	this.leaves = [];
+	this.ends = [];
 };
 
 ivar.data.Tree.prototype.put = function(path, val, root) {
@@ -123,7 +127,29 @@ ivar.data.Tree.prototype.getValue = function(path, root) {
 		return node.value;
 };
 
+/*
+	remove endswise
+*/
 ivar.data.Tree.prototype.remove = function(path, root) {
+	var node = this.get(path, root);
+	if(node !== undefined && node.end) {
+		node.end = false;
+		if(node.hasChildren()) {
+			return node;
+		} else {
+			var prev;
+			while (!node.end) {
+				console.log(node);
+				prev = node;
+				if(node.parent.children.length > 1) break;
+				node = node.parent;
+			}
+			return prev.remove();
+		}
+	}
+};
+
+ivar.data.Tree.prototype.clip = function(path, root) {
 	var node = this.get(path, root);
 	if(node !== undefined) {
 		return node.remove();
@@ -144,7 +170,6 @@ ivar.data.Tree.prototype.each = function(perNode, root) {
 	traverse(root);
 };
 
-//TODO: doesnt work as it should
 ivar.data.Tree.prototype.getLevel = function(level, root) {
 	if(root === undefined) root = this.root;	
 	var l = 1;
@@ -209,15 +234,20 @@ ivar.data.Tree.prototype.findAll = function(val, field) {
 	return res;
 };
 
+//XXX: RECURSION BUG THINK IT THROUGH!
 ivar.data.Tree.prototype.dfs = function(val, field, root) {
 	if(root === undefined) root = this.root;
 	if(field === undefined) field = 'name';
 	
 	var traverse = function(node) {
 		for(var i = 0; i < node.children.length; i++) {
-			if(ivar.equal(node.children[i][field], val)) return node.children[i];
+			console.log(node.children[i].level);
+			if(ivar.equal(node.children[i][field], val)) { 
+				console.log(node.children[i]);
+				return node.children[i];
+			}
 			if(node.children[i].hasChildren()) {
-				return traverse(node.children[i]);
+				traverse(node.children[i]);
 			}
 		}
 	};
