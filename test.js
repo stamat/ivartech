@@ -5,6 +5,7 @@ ivar.require('ivar.patt.Events');
 ivar.require('ivar.data.Graph');
 ivar.require('ivar.data.Map');
 ivar.require('ivar.data.Tree');
+ivar.require('ivar.data.ExperimentalTree');
 ivar.require('http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
 ivar.require('ivar.net.Communication');
 
@@ -15,6 +16,16 @@ function assertFalse(bool) {
 function assertTrue(bool) {
 	console.error(bool);
 }
+
+window.performance = window.performance || {};
+performance.now = (function() {
+  return performance.now       ||
+         performance.mozNow    ||
+         performance.msNow     ||
+         performance.oNow      ||
+         performance.webkitNow ||
+         function() { return new Date().getTime(); };
+})();
 
 function test() {
 	var a1 = ['foo', 'bar',2, 1,2,4, 'boo', 'ba', 'foo'];
@@ -36,7 +47,11 @@ function test() {
 
 function asd() {
 	var test = ['bar','baz','bazo','foo', 'far', 'fool', 'qux', 'quid'];
+	
+	var test1 = ['bar','baz','bazo','foo', 'far', 'fool', 'qax', 'quid'];
+	
 	var st = new ivar.data.Tree();
+	var et = new ivar.data.eTree();
 	
 	function stPut(st, arr) {
 		for(var i = 0; i < arr.length; i++) {
@@ -44,9 +59,69 @@ function asd() {
 		}
 	}
 	
-	stPut(st, test);
-	st.remove('quid');
-	console.log(st.exists('qux'));
+	function dictPut(dict, arr) {
+		for(var i = 0; i < arr.length; i++) {
+			dict[arr[i]] = 0;
+		}
+	}
+	
+	var dict = {};
+	
+	
+	
+	//put = get = delete ~ 0.02 ms
+	
+	var start,end;
+	start = performance.now();
+	stPut(st, wordlist);
+	end = performance.now();
+	console.log('t: put all 98568 words: '+(end-start));
+	
+	var start,end;
+	start = performance.now();
+	stPut(et, wordlist);
+	end = performance.now();
+	console.log('et: put all 98568 words: '+(end-start));
+	
+	start = performance.now();
+	dictPut(dict, wordlist);
+	end = performance.now();
+	console.log('ht: put all 98568 words: '+(end-start));
+	
+	start = performance.now();
+	st.put('explosionados');
+	end = performance.now();
+	console.log('t: put "explosionados": '+(end-start));
+	
+	start = performance.now();
+	et.put('explosionados');
+	end = performance.now();
+	console.log('et: put "explosionados": '+(end-start));
+	
+	start = performance.now();
+	dict['explosionados'] = 0;
+	end = performance.now();
+	console.log('ht: put "explosionados": '+(end-start));
+	
+	start = performance.now();
+	st.exists('explosions');
+	end = performance.now();
+	console.log('t: seek time of "explosions": '+(end-start));
+	
+	start = performance.now();
+	et.exists('explosions');
+	end = performance.now();
+	console.log('et: seek time of "explosions": '+(end-start));
+	
+	var res = 0;
+	start = performance.now();
+	res = dict['explosions'];
+	end = performance.now();
+	console.log('ht: seek time of "explosions": '+(end-start));
+	
+	//stPut(st1, test1);
+	//console.log(et.exists('explosions'));
+	//console.log(et.traverseUp(et.getLevel(et.countLevels())[0], 'name'));
 	
 	var to = new ivar.data.Tree().parse({ 
     "id" : 1490,

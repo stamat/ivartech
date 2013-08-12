@@ -17,8 +17,8 @@ ivar.namespace('ivar.data');
  *	Which means that it needs a controler in order to offer a full tree functionality
  *	@class
  */
-ivar.data.Node = function(name, parent, value, end) {
-	this.children = [];
+ivar.data.eNode = function(name, parent, value, end) {
+	this.children = {};
 	if(name === undefined) throw 'Node must have a name';
 	this.name = name;
 	value !== undefined ? this.value = value : this.value = null;
@@ -27,55 +27,53 @@ ivar.data.Node = function(name, parent, value, end) {
 	this.level = 0;
 };
 
-ivar.data.Node.prototype.getChildID = function(val, field) {
+ivar.data.eNode.prototype.getChildByValue = function(val) {
 	if(field === undefined) field = 'name';
-	for (var i = 0; i < this.children.length; i++) {
-		if(ivar.equal(this.children[i][field], val))
-			return i;
+	for (var i in this.children) {
+		if(ivar.equal(this.children[i].value, val))
+			return this.children[i];
 	}
 };
 
-ivar.data.Node.prototype.getChild = function(val, field) {
-	var id = this.getChildID(val, field);
-	if(id !== undefined)
-		return this.children[id];
+ivar.data.eNode.prototype.getChild = function(val) {
+		return this.children[val];
 };
 
-ivar.data.Node.prototype.removeChild = function(val, field) {
-	var id = this.getChildID(val, field);
-	if(id !== undefined)
-		return this.children.splice(id, 1);
+ivar.data.eNode.prototype.removeChild = function(val) {
+		var res = this.children[val];
+		delete this.children[val];
+		return res;
 };
 
-ivar.data.Node.prototype.remove = function() {
+ivar.data.eNode.prototype.remove = function() {
 	return this.parent.removeChild(this.name);
 };
 
-ivar.data.Node.prototype.equals = function(node) {
+ivar.data.eNode.prototype.equals = function(node) {
 	if(this === node) return true;
 	if(this.end !== node.end) return false;
 	if(!ivar.equal(this.name, node.name)) return false;
 	if(!ivar.equal(this.value, node.value)) return false;
 	if(this.children.length !== node.children.length) return false;
-	for(var i = 0; i < this.children.length; i++) {
+	for(var i in this.children) {
 		if(!this.children[i].equals(node.children[i])) return false;
 	}
 	return true;
 };
 
-ivar.data.Node.prototype.childExists = function(val, field) {
-	return this.getChild(val, field) !== undefined;
+ivar.data.eNode.prototype.childExists = function(val) {
+	return this.getChild(val) !== undefined;
 };
 
-ivar.data.Node.prototype.hasChildren = function() {
-	return this.children.length > 0;
+ivar.data.eNode.prototype.hasChildren = function() {
+	return !ivar.isEmpty(this.children);
 };
 
-ivar.data.Node.prototype.addChild = function(name, value, end) {
+ivar.data.eNode.prototype.addChild = function(name, value, end) {
 	var node = this.getChild(name);
 	if(node  === undefined) {
-		node = new ivar.data.Node(name, this, value, end);
-		this.children.push(node);
+		node = new ivar.data.eNode(name, this, value, end);
+		this.children[name] = node;
 	} else {
 		if(value !== undefined) node.value = value;
 		if(end !== undefined) node.end = end;
@@ -90,19 +88,19 @@ ivar.data.Node.prototype.addChild = function(name, value, end) {
  *	Tree class with methods of storing, getting and removing path of nodes
  *	@class
  */
-ivar.data.Tree = function() {
-	this.root = new ivar.data.Node('root');
+ivar.data.eTree = function() {
+	this.root = new ivar.data.eNode('root');
 	//this.leaves = [];
 	//this.ends = [];
 };
 
-ivar.data.Tree.prototype.clear = function() {
-	this.root = new ivar.data.Node('root');
+ivar.data.eTree.prototype.clear = function() {
+	this.root = new ivar.data.eNode('root');
 	//this.leaves = [];
 	//this.ends = [];
 };
 
-ivar.data.Tree.prototype.put = function(path, val, root) {
+ivar.data.eTree.prototype.put = function(path, val, root) {
 	if(root === undefined) root = this.root;
 	
 	for(var i = 0; i < path.length; i++) {
@@ -115,16 +113,16 @@ ivar.data.Tree.prototype.put = function(path, val, root) {
 	return root;
 };
 
-ivar.data.Tree.prototype.pathExists = function(path, root) {
+ivar.data.eTree.prototype.pathExists = function(path, root) {
 	return this.get(path, root) !== undefined;
 };
 
-ivar.data.Tree.prototype.exists = function(path) {
+ivar.data.eTree.prototype.exists = function(path) {
 	var node = this.get(path, this.root);
 	return node !== undefined && node.end;
 };
 
-ivar.data.Tree.prototype.get = function(path, root) {
+ivar.data.eTree.prototype.get = function(path, root) {
 	if(root === undefined) root = this.root;
 	for(var i = 0; i < path.length; i++) {
 		root = root.getChild(path[i]);
@@ -133,7 +131,7 @@ ivar.data.Tree.prototype.get = function(path, root) {
 	}
 };
 
-ivar.data.Tree.prototype.getValue = function(path, root) {
+ivar.data.eTree.prototype.getValue = function(path, root) {
 	var node = this.get(path, root);
 	if(node !== undefined)
 		return node.value;
@@ -142,7 +140,7 @@ ivar.data.Tree.prototype.getValue = function(path, root) {
 /*
 	remove endswise
 */
-ivar.data.Tree.prototype.remove = function(path, root) {
+ivar.data.eTree.prototype.remove = function(path, root) {
 	var node = this.get(path, root);
 	if(node !== undefined && node.end) {
 		node.end = false;
@@ -160,18 +158,18 @@ ivar.data.Tree.prototype.remove = function(path, root) {
 	}
 };
 
-ivar.data.Tree.prototype.clip = function(path, root) {
+ivar.data.eTree.prototype.clip = function(path, root) {
 	var node = this.get(path, root);
 	if(node !== undefined) {
 		return node.remove();
 	}
 };
 
-ivar.data.Tree.prototype.each = function(perNode, root) {
+ivar.data.eTree.prototype.each = function(perNode, root) {
 	if(root === undefined) root = this.root;
 	
 	var traverse = function(node) {
-		for(var i = 0; i < node.children.length; i++) {
+		for(var i in node.children) {
 			perNode(node.children[i]);
 			if(node.children[i].hasChildren()) {
 				traverse(node.children[i]);
@@ -181,14 +179,14 @@ ivar.data.Tree.prototype.each = function(perNode, root) {
 	traverse(root);
 };
 
-ivar.data.Tree.prototype.getLevel = function(level, root) {
+ivar.data.eTree.prototype.getLevel = function(level, root) {
 	if(root === undefined) root = this.root;	
 	var l = 1;
 	var traverse = function(nodes) {
 		var all_children = [];
 		for(var i = 0; i < nodes.length; i++) {
 			if(nodes[i].hasChildren())
-				all_children = all_children.concat(nodes[i].children);
+				all_children = all_children.concat(ivar.getValues(nodes[i].children));
 		}
 		
 		if(level === l) return all_children;
@@ -202,20 +200,20 @@ ivar.data.Tree.prototype.getLevel = function(level, root) {
 	return traverse([root]);
 };
 
-ivar.data.Tree.prototype.countLevels = function(root) {
+ivar.data.eTree.prototype.countLevels = function(root) {
 	if(root === undefined) root = this.root;	
 	var l = 0;
 	this.eachLevel(root, function(a){l++;});	
 	return l;
 };
 
-ivar.data.Tree.prototype.eachLevel = function(nodes, perLevel, perNode) {
+ivar.data.eTree.prototype.eachLevel = function(nodes, perLevel, perNode) {
 	var all_children = [];
 	if(nodes.length === undefined) nodes = [nodes];
 	for(var i = 0; i < nodes.length; i++) {
 		if(perNode) perNode(nodes[i]);
 		if(nodes[i].hasChildren()) {
-			all_children = all_children.concat(nodes[i].children);
+			all_children = all_children.concat(ivar.getValues(nodes[i].children));
 		}
 	}
 	if(all_children.length > 0) {
@@ -224,7 +222,7 @@ ivar.data.Tree.prototype.eachLevel = function(nodes, perLevel, perNode) {
 	}
 }
 
-ivar.data.Tree.prototype.getLeaves = function() {
+ivar.data.eTree.prototype.getLeaves = function() {
 	var res = [];
 	this.each(function(n){
 		if(!n.hasChildren()) res.push(n);
@@ -232,15 +230,15 @@ ivar.data.Tree.prototype.getLeaves = function() {
 	return res;
 };
 
-ivar.data.Tree.prototype.equals = function(tree) {
+ivar.data.eTree.prototype.equals = function(tree) {
 	return this.root.equals(tree.root);
 };
 
-ivar.data.Tree.prototype.merge = function() {
+ivar.data.eTree.prototype.merge = function() {
 	//TODO
 };
 
-ivar.data.Tree.prototype.findAll = function(val, field) {
+ivar.data.eTree.prototype.findAll = function(val, field) {
 	var res = [];
 	if(field === undefined) field = 'name';
 	this.each(function(n){
@@ -249,12 +247,12 @@ ivar.data.Tree.prototype.findAll = function(val, field) {
 	return res;
 };
 
-ivar.data.Tree.prototype.dfs = function(val, field, root) {
+ivar.data.eTree.prototype.dfs = function(val, field, root) {
 	if(root === undefined) root = this.root;
 	if(field === undefined) field = 'name';
 	
 	var traverse = function(node) {
-		for(var i = 0; i < node.children.length; i++) {
+		for(var i in node.children) {
 			if(ivar.equal(node.children[i][field], val)) { 
 				return node.children[i];
 			}
@@ -267,7 +265,7 @@ ivar.data.Tree.prototype.dfs = function(val, field, root) {
 	return traverse(root);
 };
 
-ivar.data.Tree.prototype.bfs = function(val, field, root) {
+ivar.data.eTree.prototype.bfs = function(val, field, root) {
 	if(root === undefined) root = this.root;
 	if(field === undefined) field = 'name';
 	
@@ -276,7 +274,7 @@ ivar.data.Tree.prototype.bfs = function(val, field, root) {
 		for(var i = 0; i < nodes.length; i++) {
 			if(ivar.equal(nodes[i][field], val)) return nodes[i];
 			if(nodes[i].hasChildren())
-				all_children = all_children.concat(nodes[i].children);
+				all_children = all_children.concat(ivar.getValues(nodes[i].children));
 		}
 		
 		if(all_children.length > 0)
@@ -287,16 +285,16 @@ ivar.data.Tree.prototype.bfs = function(val, field, root) {
 	return traverse([root]);
 };
 
-ivar.data.Tree.prototype.find = function(val, field, type, root) {
+ivar.data.eTree.prototype.find = function(val, field, type, root) {
 	if(type === undefined) type = 'dfs';
 	return this[type](val, field, root);
 };
 
-ivar.data.Tree.prototype.getEnds = function() {
+ivar.data.eTree.prototype.getEnds = function() {
 	return this.find(true, 'end');
 };
 
-ivar.data.Tree.prototype.traverseUp = function(node, field) {
+ivar.data.eTree.prototype.traverseUp = function(node, field) {
 	var path = [];
 	var n = node;
 	var f;
@@ -308,7 +306,7 @@ ivar.data.Tree.prototype.traverseUp = function(node, field) {
 	return path;
 };
 
-ivar.data.Tree.prototype.getPaths = function(set, field) {
+ivar.data.eTree.prototype.getPaths = function(set, field) {
 	var paths = [];
 	for(var i = 0; i < set.length; i++) {
 		paths.push(this.traverseUp(set[i], field));
@@ -316,14 +314,14 @@ ivar.data.Tree.prototype.getPaths = function(set, field) {
 	return paths;
 };
 
-ivar.data.Tree.prototype.getEntries = function() {
+ivar.data.eTree.prototype.getEntries = function() {
 	return this.getPaths(this.getEnds(), 'name');
 };
 
 /**
  *	Builds a tree out of passed object
  */
-ivar.data.Tree.prototype.parse = function(obj) {
+ivar.data.eTree.prototype.parse = function(obj) {
 	var curr = this.root;
 	var parseObject = function(obj, parent) {
 		for(var i in obj) {
@@ -345,11 +343,11 @@ ivar.data.Tree.prototype.parse = function(obj) {
 /**
  *	Builds an object out of the current tree
  */
-ivar.data.Tree.prototype.build = function() {
+ivar.data.eTree.prototype.build = function() {
 	var res = {};
 	
 	var traverse = function(node, obj) {
-		for(var i = 0; i < node.children.length; i++) {
+		for(var i in node.children) {
 			if(node.children[i].hasChildren()) {
 				obj[node.children[i].name] = {};
 				traverse(node.children[i], obj[node.children[i].name]);

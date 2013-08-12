@@ -543,23 +543,40 @@ ivar.eachArg = function(args, fn) {
 };
 
 ivar.getProperties = function(obj, re) {
-	if (!re && !ivar.isString(re)) {
-		var props = [];
-		for(var i in obj) {
-			props.push(i);
-		}
-		return props;
-	} else {
+	return ivar.unzip(obj, re)[0];
+};
+
+ivar.getValues = function(obj, re) {
+	return ivar.unzip(obj, re)[1];
+};
+
+//TODO: enhance with orderedStringify
+ivar.zip = function(p, v) {
+	var res = {};
+	for (var i = 0; i < p.length; i++) {
+		res[p[i]] = v[i];
+	}
+	return res;
+}
+
+ivar.unzip = function(obj, re) {
+	var props = [];
+	var vals = []
+	var cond = false;
+	
+	if (re) {
 		if(ivar.whatis(re) !== 'regexp')
 			re = re.toRegExp();
-		var props = [];
-		for(var i in obj) {
-			if(re.test(i)) {
-				props.push(i);
-			}
-		}
-		return props;
+		cond = true;
 	}
+	
+	for(var i in obj) {
+		if(cond && !re.test(i)) continue;
+		props.push(i);
+		vals.push(obj[i]);
+	}
+	
+	return [props, vals];
 };
 
 ivar.countProperties = function(obj, fn) {
