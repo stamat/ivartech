@@ -119,11 +119,15 @@ function asd() {
 	end = performance.now();
 	console.log('ht: seek time of "explosions": '+(end-start));
 	
+	var w = st.getEntries(st.get('expl'));
+	for (var i = 0; i < w.length; i++)
+		console.log(w[i].join(''))
+	
 	//stPut(st1, test1);
 	//console.log(et.exists('explosions'));
 	//console.log(et.traverseUp(et.getLevel(et.countLevels())[0], 'name'));
 	
-	var to = new ivar.data.Tree().parse({ 
+	var to = new ivar.data.eTree().parse({ 
     "id" : 1490,
     "married" : true,
     "name" : "Larry Smith",

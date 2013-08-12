@@ -224,11 +224,11 @@ ivar.data.Tree.prototype.eachLevel = function(nodes, perLevel, perNode) {
 	}
 }
 
-ivar.data.Tree.prototype.getLeaves = function() {
+ivar.data.Tree.prototype.getLeaves = function(root) {
 	var res = [];
 	this.each(function(n){
 		if(!n.hasChildren()) res.push(n);
-	});
+	}, root);
 	return res;
 };
 
@@ -240,12 +240,12 @@ ivar.data.Tree.prototype.merge = function() {
 	//TODO
 };
 
-ivar.data.Tree.prototype.findAll = function(val, field) {
+ivar.data.Tree.prototype.findAll = function(val, field, root) {
 	var res = [];
 	if(field === undefined) field = 'name';
 	this.each(function(n){
 		if(ivar.equal(n[field], val)) res.push(n);
-	});
+	}, root);
 	return res;
 };
 
@@ -292,8 +292,8 @@ ivar.data.Tree.prototype.find = function(val, field, type, root) {
 	return this[type](val, field, root);
 };
 
-ivar.data.Tree.prototype.getEnds = function() {
-	return this.find(true, 'end');
+ivar.data.Tree.prototype.getEnds = function(root) {
+	return this.findAll(true, 'end', root);
 };
 
 ivar.data.Tree.prototype.traverseUp = function(node, field) {
@@ -316,8 +316,8 @@ ivar.data.Tree.prototype.getPaths = function(set, field) {
 	return paths;
 };
 
-ivar.data.Tree.prototype.getEntries = function() {
-	return this.getPaths(this.getEnds(), 'name');
+ivar.data.Tree.prototype.getEntries = function(root) {
+	return this.getPaths(this.getEnds(root), 'name');
 };
 
 /**
