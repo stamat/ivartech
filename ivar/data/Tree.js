@@ -21,9 +21,9 @@ ivar.data.Node = function(name, parent, value, end) {
 	this.children = [];
 	if(name === undefined) throw 'Node must have a name';
 	this.name = name;
-	value !== undefined ? this.value = value : this.value = null;
-	parent !== undefined ? this.parent = parent : this.parent = null;
-	end !== undefined ? this.end = end : this.end = false;
+	this.value = value !== undefined ? value : null;
+	this.parent = parent ? parent : null;
+	this.end = end !== undefined ? end : null;
 	this.level = 0;
 };
 

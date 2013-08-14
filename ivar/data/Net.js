@@ -4,20 +4,31 @@ ivar.data.NetNode = function(name, parent, value, end) {
 	this.children = {};
 	if(name === undefined) throw 'Node must have a name';
 	this.name = name;
-	value !== undefined ? this.value = value : this.value = null;
-	parent !== undefined ? this.parent = parent : this.parent = null;
-	end !== undefined ? this.end = end : this.end = false;
+	this.value = value !== undefined ? value : null;
+	this.parent = parent ? parent : null;
+	this.end = end !== undefined ? end : null;
 	this.level = 0;
+};
+
+ivar.data.NetNode.prototype.findChildren = function(value, field) {
+	var res = [];	
+	for(var i in this.children) {
+			
+	}
+};
+
+ivar.data.NetNode.prototype.findChild = function(value, field) {
+	for(var i in this.children) {
+		if()
+	}
 };
 
 ivar.data.NetNode.prototype.getChild = function(id) {
 	return this.children[id];
 };
 
-ivar.data.NetNode.prototype.removeChild = function(val, field) {
-	var id = this.getChildID(val, field);
-	if(id !== undefined)
-		return this.children.splice(id, 1);
+ivar.data.NetNode.prototype.removeChild = function(id) {
+	delete this.children[val];
 };
 
 ivar.data.NetNode.prototype.remove = function() {
@@ -44,18 +55,55 @@ ivar.data.NetNode.prototype.hasChildren = function() {
 	return !ivar.isEmpty(this.children);
 };
 
-ivar.data.Net = function() {
+ivar.data.NetLevel = function(label, content) {
+	this.label = label ? label : null;
+	this.content = content ? content : {};
+}
+
+ivar.data.NetTree = function() {
 	this.levels = [];
 };
 
-ivar.data.Net.prototype.existsInLevel() {
+ivar.data.NetTree.prototype.buildLevels = function(level_labels) {
+	if(ivar.isObject(level_labels)) {
+		var count = 0;
+		for (var i in level_labels) {
+			this.levels[count] = new ivar.data.NetLevel(i, level_labels[i]);
+			count++;	
+		}
+		return;
+	};
 
-}
+	if(ivar.isString(level_labels)) level_labels = [level_labels];
+
+	for (var i = 0; i < level_labels.length; i++) {
+		this.levels[i] = new ivar.data.NetLevel(level_labels[i]);
+	}
+};
+
+ivar.data.NetTree.prototype.getLevelID = function(label) {
+	return this.levels.find(label, 'label');
+};
+
+ivar.data.NetTree.prototype.getLevel = function(id) {
+	if(ivar.isNumber(id)) return this.levels[id];
+	return this.levels[this.getLevelID(id)];
+};
+
+ivar.data.NetTree.prototype.getNode = function(level, node, feild) {
+	level = this.getLevel(level).content;
+	for	(var i in level) {
+		if()
+	}
+};
+
 
 ivar.data.Net.prototype.put = function(path) {
 	for (var i = 0; i < path.length; i++) {
-		if (!this.levels[i]) this.levels[i] = {};
-		if(ivar.isEmpty(this.levels[i]) || )
+		if (!this.levels[path[i]]) this.levels[path[i]] = {};
+		if(ivar.isEmpty(this.levels[i]) || !this.levels[i].hasOwnProperty(path[i])) {
+			this.levels[i][path[i]] = new ivar.data.NetNode(path[i]);
+		}
 	}
 };
 
