@@ -17,7 +17,7 @@ ivar.namespace('ivar.data');
  *	Which means that it needs a controler in order to offer a full tree functionality
  *	@class
  */
-ivar.data.Node = function(name, parent, value, end) {
+ivar.data.Node = function(name, value, end, parent) {
 	this.children = [];
 	if(name === undefined) throw 'Node must have a name';
 	this.name = name;
@@ -71,20 +71,13 @@ ivar.data.Node.prototype.hasChildren = function() {
 	return this.children.length > 0;
 };
 
-ivar.data.Node.prototype.addChild = function(name, value, end) {
-	var node = this.getChild(name);
-	if(node  === undefined) {
-		node = new ivar.data.Node(name, this, value, end);
-		this.children.push(node);
-	} else {
-		if(value !== undefined) node.value = value;
-		if(end !== undefined) node.end = end;
-	}
-	if(node.parent !== null)
-		node.level = node.parent.level+1;
+ivar.data.Node.prototype.addChild = function(node) {
+	this.children.push(node);
+	if(node.parent === null)
+		node.parent = this;
+	node.level = node.parent.level+1;
 	return node;
 };
-
 
 /**
  *	Tree class with methods of storing, getting and removing path of nodes
@@ -102,16 +95,28 @@ ivar.data.Tree.prototype.clear = function() {
 	//this.ends = [];
 };
 
-ivar.data.Tree.prototype.put = function(path, val, root) {
-	if(root === undefined) root = this.root;
+ivar.data.Tree.prototype.addNode = function(pnode, name, value, end) {
+	var node = pnode.getChild(name);
+	if(node  === undefined) {
+		node = new ivar.data.Node(name, value, end);
+		pnode.addChild(node);
+	} else {
+		if(value !== undefined) node.value = node.value;
+		if(end !== undefined) node.end = node.end;
+	};
+	return node;
+};
+
+ivar.data.Tree.prototype.put = function(path, value, root) {
+	var root = root ? root : this.root;	
 	
 	for(var i = 0; i < path.length; i++) {
-		if(i === path.length-1) {
-			root = root.addChild(path[i], val, true);
-			break;
-		}
-		root = root.addChild(path[i]);
+		root = this.addNode(root, path[i]);
 	}
+	
+	if(value !== undefined) root.value = value;
+	root.end = true;
+	
 	return root;
 };
 
@@ -119,6 +124,7 @@ ivar.data.Tree.prototype.pathExists = function(path, root) {
 	return this.get(path, root) !== undefined;
 };
 
+/* If entry exists */
 ivar.data.Tree.prototype.exists = function(path) {
 	var node = this.get(path, this.root);
 	return node !== undefined && node.end;
@@ -327,7 +333,7 @@ ivar.data.Tree.prototype.parse = function(obj) {
 	var curr = this.root;
 	var parseObject = function(obj, parent) {
 		for(var i in obj) {
-			var node = parent.addChild(i);
+			var node = this.addNode(parent, i);
 			if(Object.prototype.toString.call(obj[i])
 		.match(/^\[object\s(.*)\]$/)[1].toLowerCase() === 'object') { //TODO:WHAT IF IT IS A TREE OR A NODE?
 				parseObject(obj[i], node);

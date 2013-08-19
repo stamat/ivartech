@@ -1185,6 +1185,7 @@ ivar.uid = function(saltSize) {
 	return String.fromCharCode(Math.rand(i, i + 25)) + num.toString(16);
 };
 
+//This function makes you be absolutely sure that the object has unique id in a collection, @see ivar.uid() it has a small chance but it has a chance to produce the same key.
 ivar.setUniqueObject = function(obj, collection) {
 	if (!ivar.isSet(obj))
 		obj = {};

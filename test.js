@@ -163,7 +163,7 @@ function asd() {
 			alert('Here is float '+a);
 		},
 		
-		'string, ?, integer': function(a) {
+		'string, integer': function(a) {
 			alert('Here is string '+a);
 		},
 		
