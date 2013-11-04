@@ -1,35 +1,30 @@
-//Tooltip.js - Tooltip plugin
-//
-//@since: summer 2012.
-//@author: ivartech <http://ivartech.com> - Nikola Stamatovic <nikola.stamatovic@ivar.rs> 
-
 function Tooltip(opt) {
 	
 	this.attached = false;
-	this.object = $('<div class="tooltip" style="position: absolute; z-index: 100"><div class="tooltip-content" style="position: absolute; display: inline; white-space: nowrap"><i></i><span class="tooltip-text"></span></div><button type="button" style="position: absolute; outline: none; height: 1px; width: 1px; border: none; background: transparent;"></button></div>');
+	this.object = $('<div class="tooltip" style="position: absolute; z-index: 999"><div class="tip"></div><div class="tooltip-content" style="position: absolute; display: inline; white-space: nowrap"><i></i><span class="tooltip-text"></span></div><button type="button" style="position: absolute; outline: none; height: 1px; width: 1px; border: none; background: transparent;"></button></div>');
 	this.contentObject = $(this.object).find('.tooltip-content');
 	
-	if(!isSet(opt))
+	if(!ivar.isSet(opt))
 		opt = {};
 	
-	if(!isSet(opt.direction))
+	if(!ivar.isSet(opt.direction))
 		opt.direction = 'bottom';
-	if(!isSet(opt.text))
+	if(!ivar.isSet(opt.text))
 		opt.text = null;
-	if(!isSet(opt.offset))
+	if(!ivar.isSet(opt.offset))
 		opt.offset = 0;
-	if(!isSet(opt.hclass))
+	if(!ivar.isSet(opt.hclass))
 		opt.hclass = '';
-	if(!isSet(opt.id))
+	if(!ivar.isSet(opt.id))
 		opt.id = '';
-	if(!isSet(opt.onblur))
+	if(!ivar.isSet(opt.onblur))
 		opt.onblur = null;
 		
-	if(!isSet(opt.tileOffset))
+	if(!ivar.isSet(opt.tileOffset))
 		opt.tileOffset = {};
-	if(!isSet(opt.tileOffset.left))
+	if(!ivar.isSet(opt.tileOffset.left))
 		opt.tileOffset.left = 0;
-	if(!isSet(opt.tileOffset.top))
+	if(!ivar.isSet(opt.tileOffset.top))
 		opt.tileOffset.top = 0;
 		
 	this.offset = opt.offset;
@@ -56,12 +51,12 @@ function Tooltip(opt) {
 		
 	var self = this;
 	$(this.object).find('button').bind('blur', function(){
-		if(isSet(self.onblur)) {
+		if(ivar.isSet(self.onblur)) {
 			self.onblur();
 		}
 	});
 	
-	if(!isSet(this.text)) {
+	if(!ivar.isSet(this.text)) {
 		$(this.object).hide();	
 	}
 	
@@ -95,34 +90,34 @@ Tooltip.prototype.setDirection = function(direction) {
 	this.contentWidth = $(this.contentObject).width();
 	this.contentHeight = $(this.contentObject).height();
 	
-	if(direction == 'left') {
+	if(direction === 'left') {
 		$(this.contentObject).css('top',-this.contentHeight/2);
-		$(this.contentObject).css('right', this.tooltipWidth);
-		$(this.object).css('background-position', (-1*this.tileOffset.left)+'px '+(-1*(this.tileOffset.top+this.tooltipHeight))+'px');
+		$(this.contentObject).css('right', this.tooltipWidth-1);
+		$(this.object).find('.tip').css('background-position', (-1*this.tileOffset.left)+'px '+(-1*(this.tileOffset.top+this.tooltipHeight))+'px');
 		$(this.object).offset({
 			top:this.targetOffset.top+(this.targetHeight-this.tooltipWidth)/2,
 			left:this.targetOffset.left-this.tooltipWidth+this.offset
 		});
-	} else if (direction == 'right') {
+	} else if (direction === 'right') {
 		$(this.contentObject).css('top',-this.contentHeight/2);
-		$(this.contentObject).css('left', this.tooltipWidth);
-		$(this.object).css('background-position', (-1*this.tileOffset.left)+'px '+(-1*this.tileOffset.top)+'px');
+		$(this.contentObject).css('left', this.tooltipWidth-1);
+		$(this.object).find('.tip').css('background-position', (-1*this.tileOffset.left)+'px '+(-1*this.tileOffset.top)+'px');
 		$(this.object).offset({
 			top:this.targetOffset.top+(this.targetHeight-this.tooltipWidth)/2,
 			left:this.targetOffset.left+this.targetWidth+this.offset
 		});
-	} else if (direction == 'top') {
+	} else if (direction === 'top') {
 		$(this.contentObject).css('left',-(this.contentWidth+this.tooltipWidth)/2);
-		$(this.contentObject).css('top',-$(this.contentObject).outerHeight());
-		$(this.object).css('background-position', (-1*(this.tileOffset.left+this.tooltipWidth))+'px '+(-1*this.tileOffset.top)+'px');
+		$(this.contentObject).css('top',-$(this.contentObject).outerHeight()+1);
+		$(this.object).find('.tip').css('background-position', (-1*(this.tileOffset.left+this.tooltipWidth))+'px '+(-1*this.tileOffset.top)+'px');
 		$(this.object).offset({
 			top:this.targetOffset.top-this.tooltipHeight+this.offset,
 			left:this.targetOffset.left+(this.targetWidth-this.tooltipWidth)/2
 		});
-	} else if (direction == 'bottom') {
+	} else if (direction === 'bottom') {
 		$(this.contentObject).css('left',-(this.contentWidth+this.tooltipWidth)/2);
-		$(this.contentObject).css('bottom',-$(this.contentObject).outerHeight());
-		$(this.object).css('background-position', (-1*(this.tileOffset.left+this.tooltipWidth))+'px '+(-1*(this.tileOffset.top+this.tooltipHeight))+'px');
+		$(this.contentObject).css('bottom',-$(this.contentObject).outerHeight()+1);
+		$(this.object).find('.tip').css('background-position', (-1*(this.tileOffset.left+this.tooltipWidth))+'px '+(-1*(this.tileOffset.top+this.tooltipHeight))+'px');
 		$(this.object).offset({
 			top:this.targetOffset.top+this.targetHeight+this.offset,
 			left:this.targetOffset.left+(this.targetWidth-this.tooltipWidth)/2
@@ -158,7 +153,10 @@ Tooltip.prototype.setTarget = function(target, append) {
 
 Tooltip.prototype.setText = function(text) {
 	this.text = text;
-	$(this.contentObject).find('.tooltip-text').html(text);
+	if(ivar.isObject(text))
+		$(this.contentObject).find('.tooltip-text').append(text);
+	else
+		$(this.contentObject).find('.tooltip-text').html(text);
 };
 
 Tooltip.prototype.updateText = function(text) {
@@ -181,7 +179,7 @@ Tooltip.prototype.hide = function(speed) {
 		this.timer = null;
 	}
 	
-	if(isSet(speed)) {
+	if(ivar.isSet(speed)) {
 		$(this.object).fadeOut(speed);
 	} else {
 		$(this.object).hide();
@@ -189,44 +187,44 @@ Tooltip.prototype.hide = function(speed) {
 };
 
 Tooltip.prototype.show = function(opt) {
-	if(!isSet(opt))
+	if(!ivar.isSet(opt))
 		opt = {};
-	if(!isSet(opt.append)) {
+	if(!ivar.isSet(opt.append)) {
 		opt.append = false;	
 	}
 	
-	if(!isSet(opt.show)) {
+	if(!ivar.isSet(opt.show)) {
 		opt.show = true;	
 	}
 
-	if(isSet(opt.text)) {
+	if(ivar.isSet(opt.text)) {
 		this.setText(opt.text);
 	}
 	
-	if(isSet(opt.direction)) {
+	if(ivar.isSet(opt.direction)) {
 		this.direction = opt.direction;
 	}
 	
-	if(isSet(opt.offset)) {
+	if(ivar.isSet(opt.offset)) {
 		this.offset = opt.offset;
 	}
 	
-	if(isSet(opt.target)) {
+	if(ivar.isSet(opt.target)) {
 		this.setTarget(opt.target, opt.append);
 	}
 	
 	if(opt.show)
-		if(isSet(opt.speed)) {
+		if(ivar.isSet(opt.speed)) {
 			$(this.object).stop(true, true).fadeIn(opt.speed);
 		} else {
 			$(this.object).stop(true, true).show();
 		}
 	
-	if(isSet(opt.target)) {
+	if(ivar.isSet(opt.target)) {
 		this.setDirection(this.direction);
 	}
 
-	if(isSet(this.onblur)) {
+	if(ivar.isSet(this.onblur)) {
 		$(this.object).find('button').focus();
 	}
 };

@@ -1,14 +1,15 @@
-//threeway.js - threeway switch
-//
-//@since: spring 2013.
-//@author: ivartech <http://ivartech.com> - Nikola Stamatovic <nikola.stamatovic@ivar.rs> 
+/**
+*	@author Nikola Stamatovic Stamat <stamat@ivartech.com>
+*	@since May 2012
+*	@update March 2013
+*/
 
 (function($) {
 	$.fn.threeway = function(shadow, where) {
-		if(!isSet(shadow))
+		if(!ivar.isSet(shadow))
 			shadow = false;
 			
-		if(!isSet(where))
+		if(!ivar.isSet(where))
 			where = 'center';
 		
 		var selector = this.selector;
@@ -88,3 +89,4 @@
 		});
 	};
 }(jQuery));
+

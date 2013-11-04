@@ -49,7 +49,7 @@
 							value = min;
 							$(self).val(min);
 						}
-						if(isSet(onchange))
+						if(ivar.isSet(onchange))
 							onchange(self, value);
 					}, 100);
 				}
@@ -70,7 +70,7 @@
 			if(value < max) {
 				value = value+1;
 				$(field).val(value);
-				if(isSet(onchange))
+				if(ivar.isSet(onchange))
 					onchange(this, value);
 			}
 		});
@@ -81,7 +81,7 @@
 			if(value > min) {
 				value = value-1;
 				$(field).val(value);
-				if(isSet(onchange))
+				if(ivar.isSet(onchange))
 					onchange(this, value);
 			}
 		});

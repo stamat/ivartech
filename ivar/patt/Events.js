@@ -110,7 +110,7 @@ ivar.patt.Events.prototype.unbind = function(event_name, func) {
 		for (var i = 0; i < arr.length; i++) {
 			for (var j = 0; j < func.length; j++) {
 				if (arr[i] === func[j]) {
-					this.list[event_name].remove(i);
+					this.list[event_name].rm(i);
 				}
 			}
 		}
@@ -172,7 +172,7 @@ ivar.patt.Events.prototype.multi_unbind = function(arr, multi_event_name) {
 			
 		for(var i = 0; i < arr.length; i++) {
 			if(this.multi.names.hasOwnProperty(arr[i]))
-				this.multi.names[arr[i]].remove(this.multi.names[arr[i]].find(multi_event_name));
+				this.multi.names[arr[i]].rm(this.multi.names[arr[i]].find(multi_event_name));
 			if(this.multi.names[arr[i]].length == 0)
 				delete	this.multi.names[arr[i]];
 		}
@@ -199,7 +199,7 @@ ivar.patt.Events.prototype.fire = function(event_name) {
 
 	if(ivar.isSet(this.any) && ivar.isFunction(this.any))
 		this.any.apply(null, args);
-	args.remove(0);
+	args.rm(0);
 	var arrayOfEventNames = [];
 	if (ivar.isSet(arr))
 		arr.each(function(i, obj) {
@@ -241,7 +241,7 @@ ivar.patt.Events.prototype.clearBound = function(event_name) {
 	delete this.list[event_name];
 	for(var i = 0; i < this.event_names.length; i++) {
 		if (this.event_names[i] === event_name) {
-			this.event_names.remove(i);
+			this.event_names.rm(i);
 			break;
 		}
 	}

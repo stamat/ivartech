@@ -1175,13 +1175,18 @@ ivar.findValue = function(obj, val) {
 	return;
 };
 
-ivar.uid = function(saltSize) {
-	if (!ivar.isSet(saltSize))
-		saltSize = 100;
+/**
+ *	Generates a random string identifier 
+ *	from a timestamp, a random char of a random case and a hex number from combined timestamp and salt_size
+ *	@param {integer} salt_size
+ */
+ivar.uid = function(salt_size) {
+	if (!ivar.isSet(salt_size))
+		salt_size = 100;
 	var i = 97;
 	if (Math.rand(0, 1) == 0)
 		i = 65;
-	var num = Date.now() * saltSize + Math.rand(0, saltSize);
+	var num = Date.now() * salt_size + Math.rand(0, salt_size);
 	return String.fromCharCode(Math.rand(i, i + 25)) + num.toString(16);
 };
 

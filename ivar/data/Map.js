@@ -70,23 +70,34 @@ ivar.data.Map = function Map(o) {
 	 *
 	 *	@this	{Map}
 	 *	@param	{string|number}	key		Name of the key under which a value is stored
-	 *	@return	{any}					Returns the value of removed entry
+	 *	@return	{any|array}					Returns the value of removed entry, or array of values
 	 */
 	this.remove = function(k) {
-		if(ivar.whatis(k) !== 'array')
+		var res = [];
+		if (ivar.whatis(k) !== 'array') {
 			k = [k];
-		for(var i = 0; i < k.length; i++) {
-			this._remove(k[i]);
+		}
+		
+		for (var i = 0; i < k.length; i++) {
+			res.push(this._remove(k[i]));
+		}
+		
+		if (res.length > 1) {
+			return res;
+		} else {
+			return res[0];
 		}
 	}
 	 
 	this._remove = function(key) {
+		var value;
 		if(this.hasKey(key)) {
 			this._removeKeyFromArray(key);
+		
+			this.length = keys.length;
+			value = object[key];
+			delete object[key];
 		}
-		this.length = this.keys.length;
-		var value = object[key];
-		delete object[key];
 		return value;
 	};
 	 
