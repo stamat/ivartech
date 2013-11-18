@@ -588,7 +588,7 @@ ivar.countProperties = function(obj, fn) {
 	return count;
 };
 
-ivar.orderedStrigify = function(o, fn) {
+ivar.orderedStringify = function(o, fn) {
 	var val = o;
 	var type = ivar.types[ivar.whatis(o)];
 	if(type === 6) {
@@ -609,7 +609,7 @@ ivar._objectOrderedStrignify = function(o, fn) {
 	props = fn ? props.sort(fn): props.sort();
 	
 	for(var i = 0; i < props.length; i++) {
-		var val = ivar.orderedStrigify(o[props[i]], fn);
+		var val = ivar.orderedStringify(o[props[i]], fn);
         if(val !== undefined)
         	res += '"'+props[i]+'":'+ val+',';
 	}
@@ -622,7 +622,7 @@ ivar._objectOrderedStrignify = function(o, fn) {
 ivar._arrayOrderedStringify = function(a, fn) {
 	var res = '[';
 	for(var i = 0; i < a.length; i++) {
-		var val = ivar.orderedStrigify(a[i], fn);
+		var val = ivar.orderedStringify(a[i], fn);
         if(val !== undefined)
         	res += ''+ val+',';
 	}

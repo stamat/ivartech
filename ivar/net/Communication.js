@@ -7,6 +7,9 @@
  *	@namespace	ivar.net
  */
  
+
+//TODO: STORE local data for sending retry
+
 //TODO: PROBLEM!!! Response order!
 /*
 	Let's say we have two same procedure calls on server, first one takes a bit longer to complete, but the second one takes shorter time to load. First response is the one of the second call, and last is the one of the first call. So the last response becomes relevant, but it is not the information up to date.
@@ -21,7 +24,7 @@
 //TODO: Should requests be uniquely signed by request object they contain with CRC32
 // If prevous, then there should be a mechanism that stores the data of requests if the result expected is the same
 
-//TODO: Finis file upload, purge jquery form the script
+//TODO: Finish file upload, purge jquery form the script
 
 ivar.require('ivar.data.Map');
 ivar.require('ivar.patt.Events');
@@ -167,10 +170,11 @@ ivar.net.Communication.prototype.unregister = function(method_name) {
  *	@param	{string}		[options.content_type='application/json']	Content MIME type json|rest|xml| image|file...
  *	@param	{string}		[options.user]				User name for HTTP auth
  *	@param	{string}		[options.password]			User password for HTTP auth
+ *	@param 	{object}		local						Local data, not sent to the server
  *
  *	@return	{boolean}									If sending is successful or not	
  */
-ivar.net.Communication.prototype.send = function(options) {
+ivar.net.Communication.prototype.send = function(options, local) {
 	var obj = ivar.extend(ivar.clone(this.defaults), options);
 	
 	if (!ivar.isSet(obj.uri) || !ivar.isSet(obj.request) || !ivar.isSet(obj.request.method)) {
@@ -219,20 +223,21 @@ ivar.net.Communication.prototype.send = function(options) {
 			date: request.getResponseHeader('Date'),
 			response_text: request.responseText,
 			response_type: request.getResponseHeader('Content-Type'),
-			id: obj.request.id
+			id: obj.request.id,
+			local: local
 		});
 	};
 	
 	var request = ivar.request(opt, onreceive);
 	
 	if(!ivar.isSet(request))
-		return this.failed(obj, e);
+		return this.failed(obj, e, local);
 	
 //	if(this.abort) this.pending.put(obj.request.method, request);
 	this.sent.put(obj.request.id, obj);
 	ivar.echo('[request]: '+ obj.request.method, obj);
-	this.fire(obj.request.method+'-send', obj);
-	this.fire('send', obj);
+	this.fire(obj.request.method+'-send', obj, local);
+	this.fire('send', obj, local);
 	return true;
 };
 
@@ -286,8 +291,8 @@ ivar.net.Communication.prototype.receive = function(obj) {
 	 		
 	 		if (ivar.isSet(requ.callback)) requ.callback(requ, resp);
 	 		
-			this.fire(requ.request.method+'-receive', requ, resp);
-			this.fire('receive', requ, resp);
+			this.fire(requ.request.method+'-receive', requ, resp, obj.local);
+			this.fire('receive', requ, resp, obj.local);
 			
 			if(this.unsuccessful.hasKey(resp.id))
 				this.unsuccessful.remove(resp.id);
@@ -301,7 +306,7 @@ ivar.net.Communication.prototype.receive = function(obj) {
 			ivar.echo('[response]: '+ requ.request.method, resp);
 		}
 	} else {
-		this.failed(requ, requ.request.method +' - '+requ.method + ' ' + requ.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')');
+		this.failed(requ, requ.request.method +' - '+requ.method + ' ' + requ.url + ' ' + status.code + ' ' + '(' + status.codeTitle + ')', obj.local);
 	}
 };
 
@@ -312,15 +317,15 @@ ivar.net.Communication.prototype.receive = function(obj) {
  *	@param 	{string}	err 			Error message
  *	@param 	{boolean}	[store=true]	If store is true object will be stored to unsuccessful Map	
  */
-ivar.net.Communication.prototype.failed = function(obj, err, store) {
+ivar.net.Communication.prototype.failed = function(obj, err, local, store) {
 	ivar.error(err);
 	if(!ivar.isSet(store))
 		store = true;
 	if(store)
 		this.unsuccessful.put(obj.request.id, obj);
 	if(ivar.isSet(obj.request) && ivar.isSet(obj.request.method))
-		this.fire(obj.request.method+'-failed', obj);
-	this.fire('failed', obj);
+		this.fire(obj.request.method+'-failed', obj, local);
+	this.fire('failed', obj, local);
 	return false;
 };
 

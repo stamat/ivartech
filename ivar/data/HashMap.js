@@ -1,11 +1,11 @@
 /**
- * A hash table value value storage
- * Use it to quickly and resource efficiently find large objects or large strings in a very large collection. It uses CRC32 algorythm to convert supplied values into integer hashes and 
+ * A hash table key value storage
+ * Use it to quickly and resource efficiently find values bound to large object or large string keys in a very large collection. It uses CRC32 algorythm to convert supplied values into integer hashes and 
  * 
  * @author Nikola Stamatovic Stamat < stamat@ivartech.com >
  * @copyright ivartech < http://ivartech.com >
  * @version 1.0
- * @date 2013-07-02
+ * @date 2013-11-17
  * @namespace ivar.data
  */
  
@@ -26,7 +26,7 @@ ivar.namespace('ivar.data');
 		
 	c = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
 	
-	var hc = new HashCache();
+	var hc = new HashMap();
 	hc.put({a:1, b:1});
 	hc.put({b:1, a:1});
 	hc.put(true);
@@ -34,23 +34,29 @@ ivar.namespace('ivar.data');
 	hc.put(a)
 	console.log(hc.exists(b))
 	console.log(hc.exists(a))
+	console.log(hc.get(a))
 	console.log(hc.exists(c))
 	hc.remove(a)
 	console.log(hc.exists(a))
 	hc.put(c)
 	console.log(hc.exists(c))
+	console.log(hc.get(c))
 	
  * @class
- * @param	{array}	a	An array of values to store on init
+ * @param	{array}	a	An array of objects {key: key, value: value} to store on init
  */
-ivar.data.HashCache = function(a) {
+ivar.data.HashMap = function(a) {
 	/**
 	 * Keeps values in arrays labeled under typewise crc32 hashes
 	 *
-	 * @this	HashCache
+	 * @this	HashMap
 	 * @protected
 	 */
 	var storage = {};
+	
+	this.getStorage = function() {
+		return storage;
+	}
 	
 	/**
 	 * Produces an integer hash of a given value
@@ -61,9 +67,9 @@ ivar.data.HashCache = function(a) {
 	 * @param	{any}	value 	Any value to be hashed
 	 * @return	{integer}		Integer hash
 	 *
-	 * @see 	sortProperties
+	 * @see 	ivar.orderedStringify
 	 * @see 	ivar.whatis
-	 * @see 	HashCache.types
+	 * @see 	ivar.types
 	 */	
 	var hashFn = function(value) {
 		var type = ivar.types[ivar.whatis(value)];
@@ -78,95 +84,111 @@ ivar.data.HashCache = function(a) {
 	};
 	
 	/**
-	 * Checks if the value is stored under the selected hash key.
-	 * Under the same hash can be stored one or more values, this happens due to hash collisions and entries other then first element of the array are called overflow entries.
+	 * Gets value stored under the submited key
 	 *
-	 * @this	HashCache
-	 * @protected
+	 * @this	HashMap
 	 *
-	 * @param	{integer}	hash	Hash of the value
-	 * @param	{any}		value	Submited value
-	 * @return	{boolean}			Returns if the value is listed under its hash in HashCache instance
+	 * @param	{any}		key		Submited key
+	 * @return	{any}				Value stored under the key
 	 *
-	 * @see HashCache.storage
+	 * @see HashMap.storage
 	 * @see	ivar.equal
 	 */
-	var hashHoldsValue = function(hash, value) {
+	this.get = function(key) {
+		var hash = hashFn(key);
 		var bucket = storage[hash];
 		if (bucket && bucket.length > 0) {
 			for (var i = 0; i < bucket.length; i++) {
-				if(ivar.equal(bucket[i], value))
-					return true;
+				if(ivar.equal(bucket[i].key, key))
+					return bucket[i].value;
 			}
 		}
-		return false
+	};
+	
+	/**
+	 * Gets bucket id if the key is already stored under the hash in the bucket
+	 * Only for this.put
+	 *
+	 * @this	HashMap
+	 *
+	 * @param	{any}		key		Submited key
+	 * @return	{integer}			If the key exists in bucket returns positive integer, otherwise -1
+	 *
+	 * @see HashMap.storage
+	 * @see	ivar.equal
+	 */
+	var getBucketId = function(hash, key) {
+		var bucket = storage[hash];
+		if (bucket && bucket.length > 0) {
+			for (var i = 0; i < bucket.length; i++) {
+				if(ivar.equal(bucket[i].key, key))
+					return i;
+			}
+		}
+		return -1;
 	};
 	
 	/**
 	 * Hashes the value and stores it in the hash table where the generated hash is a key
 	 *
-	 * @this {HashCache}
+	 * @this	HashMap
 	 * @public
+	 * @param	{any}	key 	Any value to be stored
 	 * @param	{any}	value 	Any value to be stored
 	 *
-	 * @see	HashCache.hashFn
-	 * @see HashCache.hashHoldsValue
-	 * @see HashCache.storage
+	 * @see	HashMap.hashFn
+	 * @see HashMap.storage
+	 * @see	HashMap.getBucketId
 	 */
-	this.put = function(value) {
-		var hash = hashFn(value);
-		if(!hashHoldsValue(hash, value)) {
+	this.put = function(key, value) {
+		var hash = hashFn(key);
+		var bucket_id = getBucketId(hash, key);
+		if(bucket_id === -1) {
 			if (storage.hasOwnProperty(hash)) {
-				storage[hash].push(value);
+				storage[hash].push({key: key, value: value});
 			} else {
-				storage[hash] = [value];
+				storage[hash] = [{key: key, value: value}];
 			}
+		} else {
+			storage[hash][bucket_id] = {key: key, value: value};
 		}
 	}
 	
 	/**
 	 * Checks if the value is listed in HashCache instance
 	 *
-	 * @this	HashCache
+	 * @this	HashMap
 	 * @public
-	 * @param	{any}	value 	Any value to be checked
+	 * @param	{any}	key 	Any key to be checked for existance
 	 * @return	{boolean}		If the value is listed
 	 *
-	 * @see	HashCache.hashFn
-	 * @see HashCache.hashHoldsValue
+	 * @see	HashMap.hashFn
+	 * @see HashMap.hashHoldsKey
 	 */
-	this.exists = function(value) {
-		var hash = hashFn(value);
-		return hashHoldsValue(hash, value);
+	this.exists = function(key) {
+		var hash = hashFn(key);
+		return getBucketId(hash, key) > -1 ? true : false;
 	}
 	
 	/**
 	 * Finds the value listed and removes it from the HashCache instance
 	 *
-	 * @this	HashCache
+	 * @this	HashMap
 	 * @public
 	 * @param	{any}	value 	Any value to be removed
 	 * @return 	{boolean}		If the value existed and was removed
 	 *
-	 * @see	HashCache.hashFn
-	 * @see HashCache.storage
+	 * @see	HashMap.hashFn
+	 * @see HashMap.storage
 	 * @see ivar.equal
 	 */
-	this.remove = function(value) {
-		var hash = hashFn(value);
-		var bucket = storage[hash];
+	this.remove = function(key) {
+		var hash = hashFn(key);
+		var bucket_id = getBucketId(hash, key);
 		var res = false;
-		if(bucket && bucket.length > 0) {
-			for (var i = 0; i < bucket.length; i++) {
-				if(ivar.equal(bucket[i], value)) {
-					storage[hash].splice(i, 1);
-					res = true;
-				}
-			}
-			//Clean up
-			if(bucket.length === 0) {
-				delete storage[hash];
-			}
+		if(bucket_id > -1) {
+			bucket_id > 0 ? storage[hash].splice(bucket_id, 1) : delete storage[hash];
+			return true;
 		}
 		return res;
 	}
@@ -175,7 +197,7 @@ ivar.data.HashCache = function(a) {
 	//INIT
 	if (a !== undefined && ivar.whatis(a) === 'array') {
 		for (var i = 0; i < a.length; i++) {
-			this.put(a[i]);
+			this.put(a[i].key, a[i].value);
 		}
 	}
 };

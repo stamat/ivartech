@@ -153,10 +153,7 @@ Tooltip.prototype.setTarget = function(target, append) {
 
 Tooltip.prototype.setText = function(text) {
 	this.text = text;
-	if(ivar.isObject(text))
-		$(this.contentObject).find('.tooltip-text').append(text);
-	else
-		$(this.contentObject).find('.tooltip-text').html(text);
+	$(this.contentObject).find('.tooltip-text').html(text);
 };
 
 Tooltip.prototype.updateText = function(text) {
