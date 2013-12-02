@@ -475,22 +475,6 @@ String.prototype.findAll = function(regex, fn) {
 	return res;
 };
 
-ivar.findAndChange = function(str, regex, fn) {
-	var f = null;
-	var res = [];
-	while ((f = regex.exec(str)) !== null) {
-		if (fn) {
-			var m = fn(f[0]);
-			if (m) {
-				res.push(str.substring(0, f.index));
-				res.push(m);
-				str = str.substring(f.index+m.length, this.length);
-			}
-		}
-	}
-	return res.join('');
-};
-
 String.prototype.swap = function(what, with_this, only_first) {
 	if (only_first)
 			return this.replace(what, with_this);
@@ -523,6 +507,19 @@ String.prototype.parseJSON = function() {
 	return;
 };
 
+String.prototype.wrap = function(pref, suf) {
+	if (suf === undefined) suf = pref;
+	return pref+this+suf;
+};
+
+String.prototype.unwrap = function(pref, suf) {
+	var str = this;
+	if (suf === undefined) suf = pref;
+	str = str.removePrefix(pref);
+	str = str.removeSuf(pref);
+	return str;
+};
+
 ivar.getFunction = function(str) {
 	var fn = ivar.getProperyByNamespace(str);
 	return ivar.isFunction(fn)? fn : undefined;
@@ -538,12 +535,14 @@ ivar.getFunctions = function(str, delimiter) {
 		if(fn)
 			res.push(current);
 	}
-	
 	return res;
 };
 
 String.prototype.func = function() {
-	ivar.getFunction(this)(arguments);
+	var fns = ivar.getFunctions(this);
+	for(var i = 0; i < fns.length; i++) {
+		fns[i](arguments);
+	}
 };
 
 Function.prototype.parseName = function() {
@@ -576,14 +575,61 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
+ivar.findAndChange = function(str, regex, fn) {
+	var f = null;
+	var res = [];
+	while ((f = regex.exec(str)) !== null) {
+		if (fn) {
+			var m = fn(f);
+			if (m !== undefined) {
+				res.push(str.substring(0, f.index));
+				res.push(m);
+				str = str.substring(f.index+f[0].length, str.length);
+			}
+		}
+	}
+	res.push(str);
+	return res.join('');
+};
+
+String.prototype.wrapped = function(pref, suf) {
+	if (suf === undefined) suf = pref;
+	return this.startsWith[pref] && this.endsWith[suf];
+};
+
+String.prototype.htmlWrap = function(tagname, attribs) {
+	var pref = '<'+tagname;
+	if (attribs)
+	for (var i in attribs) {
+		pref += ' '+i+'="'+attribs[i]+'" ';
+	}
+	pref += '>';
+	var suf = tagname.wrap('</','>');
+	console.log(this.wrap(pref, suf));
+	return this.wrap(pref, suf);
+};
+
+String.prototype.htmlWrapped = function(tagname) {
+	
+};
+
+String.prototype.htmlUnwrap = function(tagname) {
+	
+};
+
 //TODO: add paragraph, link and br tags
 ivar.textToHtml = function(str) {
 	var broken = str.split('\n');
 	for (var i = 0; i < broken.length; i++) {
 		if (broken[i].length > 0) {
 			//TODO: search for links!
-			if(!broken[i].startsWith['<p>'] && !broken[i].endsWith['</p>'])
-				broken[i] = '<p>'+broken[i]+'</p>';
+			console.log(broken[i]);
+			broken[i] = ivar.findAndChange(broken[i], ivar.regex.getURIs, function(f){
+				return f[0].htmlWrap('a',{href: f[0]});
+			});
+			if(!broken[i].wrapped('<p>','</p>')) {
+				broken[i] = broken[i].htmlWrap('p');
+			}
 		} else {
 			broken[i] = '<br />';
 		}
@@ -592,16 +638,13 @@ ivar.textToHtml = function(str) {
 };
 
 ivar.htmlToText = function(str) {
-	var broken = str.split('</p>');
-	for (var i = 0; i < broken.length; i++) {
-		if (broken[i].length > 0) {
-			//TODO: search for links!
-			broken[i].findAll(/<>/g, function(f){ return ''; });
-		} else {
-			broken[i] = '<br />';
-		}
-	}
-	return broken.join('\n');
+	return ivar.findAndChange(str, /<([^>]+)>/m, function(f){ 
+
+	if(f[1] === 'br' || f[1] === 'br\\' || f[1] === '/p')
+		return '\n';
+	else
+		return ''; 
+	});
 };
 
 ivar.request = function(opt, callback) {
