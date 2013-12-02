@@ -10,6 +10,20 @@
 if (ivar === undefined) var ivar = {};
 if ($i === undefined) var $i = ivar;
 
+ivar.types = {
+	'undefined': -1,
+	'null': 0,
+	'boolean': 1,
+	'integer': 2,
+	'float': 3,
+	'string': 4,
+	'array': 5,
+	'object': 6,
+	'function': 7,
+	'regexp': 8,
+	'date': 9
+}
+
 ivar._global = this;
 
 ivar.getProperyByNamespace = function(str, root, del) {
@@ -134,6 +148,14 @@ Array.prototype.getFirst = function() {
 
 Array.prototype.getLast = function() {
 	return this[this.length-1];
+};
+
+Array.prototype.removeFirst = function() {
+	this.splice(0, 1)
+};
+
+Array.prototype.removeLast = function() {
+	this.splice(this.length-1, 1)
 };
 
 Array.prototype.each = function(fn, reversed) {
@@ -354,19 +376,45 @@ String.prototype.trimRight = function() {
 };
 
 String.prototype.removePrefix = function(str) {
-	return this.substring(str.length, this.length);
+	var l = str;
+	var what = ivar.types[ivar.whatis(str)];
+	if (what === 4) str = [str];
+	if (what !== 2 && what !== 3)
+		for (var i = 0; i < str.length; i++) {
+			if(this.startsWith(str[i])) {
+				l = str[i].length;
+				break;
+			}
+		}
+	return this.substring(l, this.length);
 };
 
 String.prototype.removeSufix = function(str) {
-	return this.substring(0, this.length - str.length);
+	var l = str;
+	var what = ivar.types[ivar.whatis(str)];
+	if (what === 4) str = [str];
+	if (what !== 2 && what !== 3)
+		for (var i = 0; i < str.length; i++) {
+			if(this.endsWith(str[i])) {
+				l = str[i].length;
+				break;
+			}
+		}
+	return this.substring(0, this.length - l);
 };
 
-String.prototype.removeFirst = function() {
-	return this.substring(1, this.length);
+String.prototype.removeFirst = function(pat) {
+	if(!pat || pat.indexOf(this[this.length-1]) > -1)
+		return this.substring(1, this.length);
+	else
+		return this;
 };
 
-String.prototype.removeLast = function() {
-	return this.substring(0, this.length-1);
+String.prototype.removeLast = function(pat) {
+	if(!pat || pat.indexOf(this[this.length-1]) > -1)
+		return this.substring(0, this.length-1);
+	else
+		return this;
 };
 
 String.prototype.getFirst = Array.prototype.getFirst;
@@ -393,6 +441,7 @@ String.prototype.hasLowerCase = function() {
 };
 
 String.prototype.template = function(obj, opened, closed) {
+	//TODO: pattern tags
 	opened = opened || '{{';
 	closed = closed || '}}';	
 	var str = this;
@@ -411,6 +460,36 @@ String.prototype.template = function(obj, opened, closed) {
 	
 	return str;
 }
+
+// find all occurrences of the pattern [and execute some function]
+String.prototype.findAll = function(regex, fn) {
+	var res = [];
+	var f = null;
+	var str = this;
+	while ((f = regex.exec(str)) !== null) {
+		res.push(f);
+		str = str.substring(f.index+f[0].length, str.length);
+		if (fn)
+			fn(f.index, f[0]);
+	}
+	return res;
+};
+
+ivar.findAndChange = function(str, regex, fn) {
+	var f = null;
+	var res = [];
+	while ((f = regex.exec(str)) !== null) {
+		if (fn) {
+			var m = fn(f[0]);
+			if (m) {
+				res.push(str.substring(0, f.index));
+				res.push(m);
+				str = str.substring(f.index+m.length, this.length);
+			}
+		}
+	}
+	return res.join('');
+};
 
 String.prototype.swap = function(what, with_this, only_first) {
 	if (only_first)
@@ -495,6 +574,34 @@ Function.prototype.inherit = function(classes) {
 	if (_classes.length === 1)
 		_classes = _classes[0];
 	this.prototype['__super__'] = _classes;
+};
+
+//TODO: add paragraph, link and br tags
+ivar.textToHtml = function(str) {
+	var broken = str.split('\n');
+	for (var i = 0; i < broken.length; i++) {
+		if (broken[i].length > 0) {
+			//TODO: search for links!
+			if(!broken[i].startsWith['<p>'] && !broken[i].endsWith['</p>'])
+				broken[i] = '<p>'+broken[i]+'</p>';
+		} else {
+			broken[i] = '<br />';
+		}
+	}
+	return broken.join('');
+};
+
+ivar.htmlToText = function(str) {
+	var broken = str.split('</p>');
+	for (var i = 0; i < broken.length; i++) {
+		if (broken[i].length > 0) {
+			//TODO: search for links!
+			broken[i].findAll(/<>/g, function(f){ return ''; });
+		} else {
+			broken[i] = '<br />';
+		}
+	}
+	return broken.join('\n');
 };
 
 ivar.request = function(opt, callback) {
@@ -955,20 +1062,6 @@ ivar.getClassName = function(val) {
 	return val.constructor.parseName();
 }
 
-ivar.types = {
-	'undefined': -1,
-	'null': 0,
-	'boolean': 1,
-	'integer': 2,
-	'float': 3,
-	'string': 4,
-	'array': 5,
-	'object': 6,
-	'function': 7,
-	'regexp': 8,
-	'date': 9
-}
-
 ivar.whatis = function(val) {
 
 	if (val === undefined)
@@ -1173,6 +1266,54 @@ ivar.findValue = function(obj, val) {
 			return i;
 	}
 	return;
+};
+
+ivar.Timer = function Timer(fn, timeout, count, now) {
+	if(now === undefined) now = true;
+	this.fn = fn;
+	count = count-1
+	var i = 0;
+	var finite = function() {
+		fn(i);
+		if(i < count) {
+			i++;
+		} else {
+			i = 0;
+		}
+	}
+	
+	var infinite = function() {
+		fn(i);
+		i++;
+	}
+	
+	if(count !== undefined && count > -1) {
+		if(count > 0)
+			this.fn = finite;
+		else
+			this.fn = infinite;
+	}
+	
+	this.timeout = timeout;
+	var now = now;
+	var timer_id = null;
+	this.stopped = false;
+	
+	
+	this.start = function() {
+		this.stopped = false;
+		if(now) this.fn();
+		timer_id = window.setInterval(this.fn, this.timeout);
+	};
+
+	this.stop = function() {
+		this.stopped = true;
+		window.clearInterval(timer_id);
+	};
+	
+	this.restart = function() {
+		i = 0;
+	}
 };
 
 /**

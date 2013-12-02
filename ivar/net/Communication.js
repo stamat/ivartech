@@ -289,10 +289,10 @@ ivar.net.Communication.prototype.receive = function(obj) {
 		 			ivar.error(e);
 		 		}
 	 		
-	 		if (ivar.isSet(requ.callback)) requ.callback(requ, resp);
-	 		
 			this.fire(requ.request.method+'-receive', requ, resp, obj.local);
 			this.fire('receive', requ, resp, obj.local);
+			
+			if (ivar.isSet(requ.callback)) requ.callback(requ, resp);
 			
 			if(this.unsuccessful.hasKey(resp.id))
 				this.unsuccessful.remove(resp.id);
