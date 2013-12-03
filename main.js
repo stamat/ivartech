@@ -77,6 +77,10 @@ ivar.regex.time = /^(([0-1][0-9])|(2[0-3])):([0-5][0-9]):([0-5][0-9])$/;
 
 ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
 
+ivar.regex.hashtag = /((^#)|(\s+#))([a-zA-Z0-9_\-]+)/ig;
+ivar.regex.attag = /((^@)|(\s+@))([a-zA-Z0-9_\-]+)/ig;
+ivar.regex.wikitag = /((^~)|(\s+~))([a-zA-Z0-9_\-:\(\)]+)/ig;
+
 //i tried...   http://username:password@some.fine.example.com:8042/over/there/index.dtb?type=animal&name=narwhal#nose
 ivar.regex.getURIs = /(?:(?:https?|ftp):\/\/)(?:([^?#@:]*)(?::([^?#@:]*))?@)?((?:www\.|ftp\.)?([a-z0-9\-\.]+)\.(com|net|org|info|co|us|it|ca|cc|[a-z]{2,4})(:[0-9]{1,5})?((\/[^\/#\?\s]*)*)*)(\?([^#\s]*))?(#([^\s]*))?/ig;
 
@@ -466,11 +470,17 @@ String.prototype.findAll = function(regex, fn) {
 	var res = [];
 	var f = null;
 	var str = this;
+	//var id = 0;
+	regex = ivar.regexpAddFlag(regex, 'g');
 	while ((f = regex.exec(str)) !== null) {
+		//id += f.index;
+		//str = str.substring(f.index+f[0].length, str.length);
+		//if(regex.lastIndex) regex.lastIndex = 0;
 		res.push(f);
-		str = str.substring(f.index+f[0].length, str.length);
 		if (fn)
-			fn(f.index, f[0]);
+			fn(f, f.index);
+		//console.log(id+'-'+f[0]);
+		//id += f[0].length;
 	}
 	return res;
 };
@@ -575,18 +585,66 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
+ivar.regexpGetFlags = function(re) {
+	re = re.toString();
+	return re.substring(re.lastIndexOf('/')+1, re.length);
+};
+
+ivar.regexpHasFlag = function(re, flag) {
+	var t = new RegExp(flag, 'i');
+	return t.test(ivar.regexpGetFlags(re));
+};
+
+ivar.regexpAddFlag = function(re, flag) {
+	var ore = re;
+	re = re.toString().removeFirst();
+	var lio = re.lastIndexOf('/');
+	var f = re.substring(lio+1, re.length);
+	var t = new RegExp(flag,'i');
+	re = re.substring(0, lio);
+	if (!t.test(f))
+		return new RegExp(re, flag+f);
+	else
+		return ore;
+};
+
+ivar.regexpCombine = function(arr, flags) {
+	var lock = false;
+	if (flags) lock = true;
+	var res = [];
+	if(arr.length > 1) {
+		for (var i = 0; i < arr.length; i++) {
+			arr[i] = arr[i].toString().removePrefix('/');
+			var lio = arr[i].lastIndexOf('/');
+			if(!lock) {
+				var suf = arr[i].substring(lio+1, arr[i].length);
+				flags = suf;
+				if(/[mig]{3}/.test(flags)) {
+					lock = true;
+				}
+			}
+			arr[i] = arr[i].substring(0, arr[i].lastIndexOf('/'));
+			res.push(arr[i].wrap('(',')'));
+		}
+	} else {
+		return arr[0];
+	}
+	
+	return new RegExp(res.join('|'), flags);
+};
+
 ivar.findAndChange = function(str, regex, fn) {
 	var f = null;
 	var res = [];
+	var id = 0;
 	while ((f = regex.exec(str)) !== null) {
-		if (fn) {
-			var m = fn(f);
-			if (m !== undefined) {
-				res.push(str.substring(0, f.index));
-				res.push(m);
-				str = str.substring(f.index+f[0].length, str.length);
-			}
-		}
+		id += f.index;
+		var m = fn(f, id);
+		res.push(str.substring(0, f.index));
+		res.push(m);
+		str = str.substring(f.index+f[0].length, str.length);
+		if(regex.lastIndex) regex.lastIndex = 0;
+		id += f[0].length;
 	}
 	res.push(str);
 	return res.join('');
@@ -605,7 +663,6 @@ String.prototype.htmlWrap = function(tagname, attribs) {
 	}
 	pref += '>';
 	var suf = tagname.wrap('</','>');
-	console.log(this.wrap(pref, suf));
 	return this.wrap(pref, suf);
 };
 
