@@ -77,9 +77,9 @@ ivar.regex.time = /^(([0-1][0-9])|(2[0-3])):([0-5][0-9]):([0-5][0-9])$/;
 
 ivar.regex.function_name = /function\s+([a-zA-Z0-9_\$]+?)\s*\(/;
 
-ivar.regex.hashtag = /((^#)|(\s+#))([a-zA-Z0-9_\-]+)/ig;
-ivar.regex.attag = /((^@)|(\s+@))([a-zA-Z0-9_\-]+)/ig;
-ivar.regex.wikitag = /((^~)|(\s+~))([a-zA-Z0-9_\-:\(\)]+)/ig;
+ivar.regex.hashtag = /((^#)|(\s#))([a-zA-Z0-9_\-]+)/ig;
+ivar.regex.attag = /((^@)|(\s@))([a-zA-Z0-9_\-]+)/ig;
+ivar.regex.wikitag = /((^~)|(\s~))([a-zA-Z0-9_\-:\(\)]+)/ig;
 
 //i tried...   http://username:password@some.fine.example.com:8042/over/there/index.dtb?type=animal&name=narwhal#nose
 ivar.regex.getURIs = /(?:(?:https?|ftp):\/\/)(?:([^?#@:]*)(?::([^?#@:]*))?@)?((?:www\.|ftp\.)?([a-z0-9\-\.]+)\.(com|net|org|info|co|us|it|ca|cc|[a-z]{2,4})(:[0-9]{1,5})?((\/[^\/#\?\s]*)*)*)(\?([^#\s]*))?(#([^\s]*))?/ig;
@@ -252,6 +252,14 @@ Array.prototype.toObject = function() {
 	return res;
 };
 
+Array.prototype.invert = function() {
+	var res = {};
+	for(var i = 0; i < this.length; i++) {
+		res[this[i]] = i;
+	}
+	return res;
+};
+
 ivar.toMapKey = function(value) {
 	var type = ivar.types[ivar.whatis(value)];
 		
@@ -272,6 +280,7 @@ Array.prototype.merge = function(arr) {
 	}
 };
 
+//TODO: ?
 Array.prototype.map = function(field) {
 	var mapped = {};
 	for (var i = 0; i< this.length; i++) {
@@ -369,6 +378,10 @@ String.prototype.trim = function() {
 	return this.replace(/^\s+|\s+$/g,'');
 };
 
+String.prototype.trimAll = function() {
+	return this.replace(/^[\s\n]+|[\s\n]+$/mg,'');
+};
+
 if (!String.prototype.hasOwnProperty('trimLeft'))
 String.prototype.trimLeft = function() {
 	return this.replace(/^\s+/,'');
@@ -426,8 +439,11 @@ String.prototype.getFirst = Array.prototype.getFirst;
 String.prototype.getLast = Array.prototype.getLast;
 
 String.prototype.insert = function(what, where, end) {
-	if (typeof where === 'string')
-		where = this.indexOf(where);
+	if (typeof where === 'string') {
+		var id = this.indexOf(where)
+		end = end || id+where.length;
+		where = id;
+	}
 	end = end || where;
 	var res = [];
 	res.push(this.substring(0, where));
@@ -452,14 +468,17 @@ String.prototype.template = function(obj, opened, closed) {
 	var id = str.indexOf(opened);
 	
 	while (id > -1){
-		var end = str.indexOf(closed, id);
-		var propertyName = str.substring(id+opened.length, end);
+		var end = str.indexOf(closed, id+opened.length);
+		var property_name = str.substring(id+opened.length, end);
 		
-		var repl = obj[propertyName] || '';
+		var repl = obj[property_name];
 		
-		str = str.insert(repl, id, end+closed.length);
-		
-		id = str.indexOf(opened, id+repl.length);
+		if (repl !== undefined) {
+			str = str.insert(repl, id, end+closed.length);
+			id = str.indexOf(opened, id+repl.length);
+		} else {
+			id = str.indexOf(opened, id+opened.length);
+		}
 	}
 	
 	return str;
@@ -470,17 +489,11 @@ String.prototype.findAll = function(regex, fn) {
 	var res = [];
 	var f = null;
 	var str = this;
-	//var id = 0;
 	regex = ivar.regexpAddFlag(regex, 'g');
 	while ((f = regex.exec(str)) !== null) {
-		//id += f.index;
-		//str = str.substring(f.index+f[0].length, str.length);
-		//if(regex.lastIndex) regex.lastIndex = 0;
 		res.push(f);
 		if (fn)
 			fn(f, f.index);
-		//console.log(id+'-'+f[0]);
-		//id += f[0].length;
 	}
 	return res;
 };
@@ -585,6 +598,29 @@ Function.prototype.inherit = function(classes) {
 	this.prototype['__super__'] = _classes;
 };
 
+Array.prototype.chain = function() {
+	var res = undefined;
+	var args = [];
+	
+	var i = 0;
+	while (arguments.hasOwnProperty(i)) {
+		args.push(arguments[i]);
+		i++;
+	}
+	
+	for (var i = 0; i < this.length; i++) {
+		if(typeof this[i] === 'function') {
+			if (res !== undefined)
+				args = [res].concat(args);
+			res = this[i].apply(this[i], args);
+			args = [];
+		} else {
+			args.push(this[i]);
+		}
+	}
+	return res;
+};
+
 ivar.regexpGetFlags = function(re) {
 	re = re.toString();
 	return re.substring(re.lastIndexOf('/')+1, re.length);
@@ -633,6 +669,7 @@ ivar.regexpCombine = function(arr, flags) {
 	return new RegExp(res.join('|'), flags);
 };
 
+//TODO: what if i want to find only one occurrence?
 ivar.findAndChange = function(str, regex, fn) {
 	var f = null;
 	var res = [];
@@ -642,9 +679,11 @@ ivar.findAndChange = function(str, regex, fn) {
 		var m = fn(f, id);
 		res.push(str.substring(0, f.index));
 		res.push(m);
+		
 		str = str.substring(f.index+f[0].length, str.length);
 		if(regex.lastIndex) regex.lastIndex = 0;
 		id += f[0].length;
+		
 	}
 	res.push(str);
 	return res.join('');
@@ -667,40 +706,30 @@ String.prototype.htmlWrap = function(tagname, attribs) {
 };
 
 String.prototype.htmlWrapped = function(tagname) {
-	
+	//TODO
 };
 
 String.prototype.htmlUnwrap = function(tagname) {
-	
+	//TODO
 };
 
-//TODO: add paragraph, link and br tags
 ivar.textToHtml = function(str) {
 	var broken = str.split('\n');
 	for (var i = 0; i < broken.length; i++) {
-		if (broken[i].length > 0) {
-			//TODO: search for links!
-			console.log(broken[i]);
-			broken[i] = ivar.findAndChange(broken[i], ivar.regex.getURIs, function(f){
-				return f[0].htmlWrap('a',{href: f[0]});
-			});
-			if(!broken[i].wrapped('<p>','</p>')) {
-				broken[i] = broken[i].htmlWrap('p');
-			}
-		} else {
-			broken[i] = '<br />';
-		}
+		broken[i] = ivar.findAndChange(broken[i], ivar.regex.getURIs, function(f){
+			return f[0].htmlWrap('a',{href: f[0]});
+		});
 	}
-	return broken.join('');
+	return broken.join('<br />');
 };
 
 ivar.htmlToText = function(str) {
 	return ivar.findAndChange(str, /<([^>]+)>/m, function(f){ 
-
-	if(f[1] === 'br' || f[1] === 'br\\' || f[1] === '/p')
-		return '\n';
-	else
-		return ''; 
+		if(f[1] === 'br' || f[1] === 'br\\') {
+			return '\n';
+		} else {
+			return '';
+		} 
 	});
 };
 
@@ -739,14 +768,16 @@ ivar.request = function(opt, callback) {
     return request;
 };
 
-ivar.eachArg = function(args, fn) {
-	var i = 0;
+ivar.eachArg = function(args, fn, start_from, end_where) {
+	var i = start_from || 0;
 	while (args.hasOwnProperty(i)) {
+		if (end_where !== undefined && i === end_where)
+			return i;
 		if (fn !== undefined)
 			fn(i, args[i]);
 		i++;
 	}
-	return i-1;
+	return i;
 };
 
 ivar.getProperties = function(obj, re) {
@@ -1278,7 +1309,7 @@ ivar.extend = function(o1, o2, if_not_exists) {
 	for (var i in o2) {
 		if (!(ivar.isSet(o1[i]) && if_not_exists)) {
 			if (ivar.whatis(o1[i]) === 'object' && ivar.whatis(o2[i]) === 'object') {
-				ivar.extend(o1[i], o2[i], clone, if_not_exists);
+				ivar.extend(o1[i], o2[i], if_not_exists);
 			} else {
 				o1[i] = o2[i]
 			}
@@ -1338,6 +1369,45 @@ ivar._cloneArray = function(a) {
 	}
 	return res;
 };
+
+/* Provide element and declared functions under the same name as expected attributes of the element. Parse attr values with declared functions and return the parsed value to an object that will be the result at the end */
+//XXX: This is a DOM tool
+ivar.parseElementAttributes = function (elem, decl_fns) {
+	var res = {};
+	var attr_names = [];
+	for (var i = 0; i < elem.attributes.length; i++) {
+		var attr = elem.attributes[i];
+		if(decl_fns !== undefined && decl_fns.hasOwnProperty(attr.name)) {
+			var args = [];
+			args.push(attr.value);
+			args.push(attr.name);
+			args.push(elem);
+			ivar.eachArg(arguments, function(i, elem) {
+				if(i > 1)
+					args.push(elem);
+			});
+			var r = null;
+			if (typeof decl_fns[attr.name] === 'function') {
+				r = decl_fns[attr.name].apply(null, args);
+			}
+			
+			if (r === null)
+				r = attr.value;
+			
+			var last_del_id = attr.name.lastIndexOf('_');
+			var attr_pref = attr.name.substring(0, last_del_id);
+			var attr_suf = attr.name.substring(last_del_id+1, attr.name.length);
+			var node = ivar.namespace(attr_pref, res, '_');
+			node[attr_suf] = r;
+			attr_names.push(attr.name);
+		}
+	}
+	
+	for (var i = 0; i < attr_names.length; i++) {
+		elem.removeAttribute(attr_names[i]);
+	}
+	return res;
+}
 
 /**
  *	"Short" for loop. Should force me to separate inner loops into functions.
