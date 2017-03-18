@@ -1303,19 +1303,28 @@ ivar.equal = function(a, b) {
  *	
  *	@param	{object}	extended	First object to be extended
  *	@param	{object}	extender	Second object extending the first one
- *	@return	{object}				Returns cloned object
- */
+ *	@return	{object}				Returns the extended instance
+    if_not_exists can be undefined, true, false, if it's false it will only extend the object if it has the property of the extender, if it's true it extends only if the property doesn't exist or it's null
+*/
 ivar.extend = function(o1, o2, if_not_exists) {
 	for (var i in o2) {
-		if (!(ivar.isSet(o1[i]) && if_not_exists)) {
-			if (ivar.whatis(o1[i]) === 'object' && ivar.whatis(o2[i]) === 'object') {
-				ivar.extend(o1[i], o2[i], if_not_exists);
+        var state = true;
+        if (if_not_exists !== undefined ) {
+            if (if_not_exists === false) {
+                state = o1.hasOwnProperty(i);
+            } else {
+                state = !(o1[i] !== undefined && o1[i] !== null && if_not_exists);
+            }
+        }
+
+		if (state) {
+			if (typeof o1[i] === 'object' && typeof o2[i] === 'object') {
+				farsight._utils.extend(o1[i], o2[i], if_not_exists);
 			} else {
 				o1[i] = o2[i]
 			}
 		}
 	}
-	
 	return o1;
 };
 
